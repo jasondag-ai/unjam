@@ -14,7 +14,7 @@ import {
   type History,
   type Side,
 } from '../engine';
-import type { Level, World } from '../levels/types';
+import type { World } from '../levels/types';
 import { hitTest } from './hit';
 import { blockCellRects, blockCentre, blockRect, computeLayout, type Layout } from './layout';
 import { Renderer, type Draw } from './render';
@@ -34,16 +34,19 @@ export interface Hud {
   readonly canvas: HTMLCanvasElement;
   readonly header: HTMLElement;
   readonly footer: HTMLElement;
+  readonly level: HTMLElement;
   readonly moves: HTMLElement;
+  readonly next: HTMLButtonElement;
   readonly undo: HTMLButtonElement;
   readonly restart: HTMLButtonElement;
 }
 
-export function startGame(hud: Hud, world: World, level: Level): void {
+export function startGame(hud: Hud, world: World): void {
   const ctx = hud.canvas.getContext('2d')!;
   const renderer = new Renderer(ctx, world);
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
-  let history: History = createHistory(level.start);
+  let levelIndex = 0;
+  let history: History = createHistory(world.levels[0]!.start);
   let layout: Layout;
   let anims: Anim[] = [];
   let frameRequested = false;
@@ -58,16 +61,28 @@ export function startGame(hud: Hud, world: World, level: Level): void {
     hud.canvas.style.height = `${height}px`;
     const top = hud.header.getBoundingClientRect().bottom;
     const bottom = height - hud.footer.getBoundingClientRect().top;
-    layout = computeLayout(width, height, dpr, level.start.size, top, bottom);
-    renderer.resize(layout, level.start.rails);
+    const start = world.levels[levelIndex]!.start;
+    layout = computeLayout(width, height, dpr, start.size, top, bottom);
+    renderer.resize(layout, start.rails);
     requestFrame();
   }
 
   function updateHud(): void {
     const state = current(history);
-    hud.moves.textContent = isSolved(state) ? `Cleared in ${state.moves} moves` : `Moves ${state.moves}`;
+    const solved = isSolved(state);
+    hud.level.textContent = `Level ${world.levels[levelIndex]!.id}`;
+    hud.moves.textContent = solved ? `Cleared in ${state.moves} moves` : `Moves ${state.moves}`;
     hud.undo.disabled = !canUndo(history);
     hud.restart.disabled = !canUndo(history);
+    const hasNext = solved && levelIndex < world.levels.length - 1;
+    hud.next.classList.toggle('hidden', !hasNext);
+    hud.next.disabled = !hasNext;
+  }
+
+  function loadLevel(index: number): void {
+    levelIndex = index;
+    resetTo(createHistory(world.levels[index]!.start));
+    relayout();
   }
 
   // The engine state changes at once; animations only replay it visually,
@@ -174,6 +189,7 @@ export function startGame(hud: Hud, world: World, level: Level): void {
 
   hud.undo.addEventListener('click', () => resetTo(undo(history)));
   hud.restart.addEventListener('click', () => resetTo(restart(history)));
+  hud.next.addEventListener('click', () => loadLevel(levelIndex + 1));
   window.addEventListener('resize', relayout);
 
   updateHud();

@@ -10,11 +10,12 @@ startGame(
   {
     canvas: byId<HTMLCanvasElement>('board'),
     header: byId('hud'),
-    footer: byId('build'),
+    footer: byId('foot'),
+    level: byId('level'),
     moves: byId('moves'),
+    next: byId<HTMLButtonElement>('next'),
     undo: byId<HTMLButtonElement>('undo'),
     restart: byId<HTMLButtonElement>('restart'),
   },
   world1,
-  world1.levels[0]!,
 );
