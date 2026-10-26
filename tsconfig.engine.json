@@ -1,0 +1,11 @@
+{
+  // Guard: the engine compiles with no DOM and no Node types.
+  // Any browser or Node API used in src/engine fails this check.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": []
+  },
+  "include": ["src/engine"],
+  "exclude": ["src/engine/**/*.test.ts", "src/engine/demo.ts"]
+}
