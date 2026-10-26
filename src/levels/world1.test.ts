@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { boardToText, canExit, cellsOf, validateState, type State } from '../engine';
 import { tapSolution } from '../search/search';
 import { familyOf } from '../search/shapes';
-import { BANDS, type Band } from './bands';
+import { BANDS, PIECE_SIZE, type Band } from './bands';
+import { lateCandidates } from './candidates';
 import { world1 } from './world1';
 
 const levels = world1.levels;
@@ -14,10 +15,18 @@ const ringCells = (s: State) =>
   s.blocks.flatMap(cellsOf).filter((c) => c.row === 0 || c.col === 0 || c.row === s.size - 1 || c.col === s.size - 1).length;
 const within = (n: number, [lo, hi]: readonly [number, number]) => n >= lo && n <= hi;
 
+/** Grid, piece count, fill, free pieces, and the job 003 mix where the band asks for it. */
 function inBand(s: State, band: Band): void {
-  expect(within(s.blocks.length, band.pieces), `${s.blocks.length} pieces`).toBe(true);
+  const n = s.blocks.length;
+  expect(s.size, 'grid').toBe(band.grid);
+  expect(within(n, band.pieces), `${n} pieces`).toBe(true);
   expect(within(fill(s), band.fill), `fill ${fill(s).toFixed(2)}`).toBe(true);
   expect(within(free(s), band.free), `${free(s)} free`).toBe(true);
+  if (band.mix) {
+    expect(s.blocks.filter((b) => b.shape.length === 2).length, 'dominoes').toBeLessThanOrEqual(n / 3);
+    expect(s.blocks.filter((b) => b.shape.length >= 3).length, '3+ cell pieces').toBeGreaterThanOrEqual(n / 2);
+    expect(families(s).size, 'L/T/S/Z families').toBeGreaterThanOrEqual(3);
+  }
 }
 
 describe('world1', () => {
@@ -30,11 +39,14 @@ describe('world1', () => {
   });
 
   describe.each(levels.map((l) => [l.id, l.start] as const))('level %s', (_, s) => {
-    it('is a valid 6x6 board on the world rails, using every colour', () => {
+    it('is a valid board on the world rails, using every colour', () => {
       expect(() => validateState(s)).not.toThrow();
-      expect(s.size).toBe(6);
       expect(s.rails).toEqual(world1.rails);
       expect(new Set(s.blocks.map((b) => b.colour)).size).toBe(4);
+    });
+
+    it('holds every piece to 2 to 4 cells', () => {
+      for (const b of s.blocks) expect(within(b.shape.length, PIECE_SIZE)).toBe(true);
     });
 
     it('clears by taps alone, one tap per piece', () => {
@@ -43,17 +55,21 @@ describe('world1', () => {
   });
 });
 
-describe('the density curve', () => {
+describe('the curve', () => {
   it('gets thicker every level', () => {
     for (let i = 1; i < levels.length; i++) {
       expect(fill(levels[i]!.start)).toBeGreaterThan(fill(levels[i - 1]!.start));
     }
   });
 
-  it('never drops a piece from one generated level to the next', () => {
-    for (let i = 1; i < 9; i++) {
+  it('never drops a piece from one level to the next', () => {
+    for (let i = 1; i < levels.length; i++) {
       expect(levels[i]!.start.blocks.length).toBeGreaterThanOrEqual(levels[i - 1]!.start.blocks.length);
     }
+  });
+
+  it('steps the grid up from 6x6 to 7x7 at level 6', () => {
+    expect(levels.map((l) => l.start.size)).toEqual([6, 6, 6, 6, 6, 7, 7, 7, 7, 7]);
   });
 
   it('starts at the easy end of the early band', () => {
@@ -62,12 +78,18 @@ describe('the density curve', () => {
     expect(fill(s)).toBeLessThan(0.33);
     expect(ringCells(s)).toBe(0);
   });
+
+  it('ends at the top of the middle band', () => {
+    const s = levels[9]!.start;
+    expect(fill(s)).toBeGreaterThanOrEqual(0.62);
+    expect(free(s)).toBe(1);
+  });
 });
 
 describe.each(levels.slice(0, 5).map((l) => [l.id, l.start] as const))('early band: level %s', (_, s) => {
   it('sits in the early band', () => inBand(s, BANDS.early));
 
-  it('is mostly 2 and 3 cell pieces', () => {
+  it('leans to 2 and 3 cell pieces', () => {
     expect(s.blocks.filter((b) => b.shape.length <= 3).length).toBeGreaterThanOrEqual(s.blocks.length * 0.75);
   });
 
@@ -76,39 +98,16 @@ describe.each(levels.slice(0, 5).map((l) => [l.id, l.start] as const))('early ba
   });
 });
 
-describe.each(levels.slice(5, 9).map((l) => [l.id, l.start] as const))('middle band: level %s', (_, s) => {
-  it('sits in the middle band', () => inBand(s, BANDS.middle));
-
-  it('brings in the L, T, S and Z shapes', () => {
-    expect(families(s).size).toBeGreaterThanOrEqual(1);
-  });
+describe.each(levels.slice(5, 10).map((l) => [l.id, l.start] as const))('middle band: level %s', (_, s) => {
+  it('sits in the middle band, with the job 003 mix', () => inBand(s, BANDS.middle));
 });
 
-describe('level 10, the job 003 board', () => {
-  const s = levels[9]!.start;
-
-  it('matches its picture', () => {
-    expect(boardToText(s)).toBe(
-      [
-        '+ a a a a a a +',
-        'm . A A . . . c',
-        'm . B A C C D c',
-        'm B B C C E D c',
-        'm F F F . E D c',
-        'm . F G G E E c',
-        'm H H G G . . c',
-        '+ v v v v v v +',
-      ].join('\n'),
-    );
-  });
-
-  it('keeps the job 003 mix: 8 to 10 pieces, 60 to 75 percent, real shapes', () => {
-    const n = s.blocks.length;
-    expect(within(n, [8, 10])).toBe(true);
-    expect(within(fill(s), [0.6, 0.75])).toBe(true);
-    expect(s.blocks.filter((b) => b.shape.length === 2).length).toBeLessThanOrEqual(n / 3);
-    expect(s.blocks.filter((b) => b.shape.length >= 3).length).toBeGreaterThanOrEqual(n / 2);
-    expect(families(s).size).toBeGreaterThanOrEqual(3);
-    expect(free(s)).toBeLessThanOrEqual(2);
+describe('late-band candidates', () => {
+  it('keeps the job 003 board, valid and clearable by taps, outside the level list', () => {
+    const board = lateCandidates.find((l) => l.id === 'job-003')!.start;
+    expect(() => validateState(board)).not.toThrow();
+    expect(tapSolution(board)).toHaveLength(board.blocks.length);
+    expect(boardToText(board).split('\n')[1]).toBe('m . A A . . . c');
+    expect(levels.some((l) => l.start === board)).toBe(false);
   });
 });

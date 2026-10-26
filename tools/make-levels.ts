@@ -1,24 +1,28 @@
-// Generates world 1 levels 1 to 9 from the curve below and prints them as a
+// Generates world 1 levels 1 to 10 from the curve below and prints them as a
 // TypeScript module. Run: npm run levels
-// Same seeds, same boards. Level 10 is the job 003 board, kept in world1.ts.
+// Same seeds, same boards.
 import { boardToText } from '../src/engine';
+import { BANDS, PIECE_SIZE } from '../src/levels/bands';
 import { searchBoard, type SearchParams } from '../src/search/search';
 
 const RAILS = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
 
-type Plan = Omit<SearchParams, 'size' | 'tries' | 'seed'> & { readonly band: 'early' | 'middle' };
+type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax'> & { readonly band: 'early' | 'middle' };
 
-// Rising steadily: fill 31% -> 64%, clustering loosens, free pieces fall.
+// Rising steadily: pieces 5 -> 10, fill 31% -> 63%, grid 6x6 -> 7x7 at level 6.
+// Middle levels follow the job 003 mix, which caps a 7x7 board at about 10
+// pieces inside 65 percent fill.
 const CURVE: readonly Plan[] = [
-  { band: 'early', pieces: 5, cells: 11, pieceSize: [2, 3], minFamilies: 0, maxDominoes: 10, free: [3, 3], ringMax: 0 },
-  { band: 'early', pieces: 6, cells: 13, pieceSize: [2, 3], minFamilies: 0, maxDominoes: 10, free: [3, 3], ringMax: 1 },
-  { band: 'early', pieces: 6, cells: 14, pieceSize: [2, 3], minFamilies: 0, maxDominoes: 10, free: [2, 3], ringMax: 2 },
-  { band: 'early', pieces: 7, cells: 15, pieceSize: [2, 3], minFamilies: 0, maxDominoes: 10, free: [2, 2], ringMax: 3 },
-  { band: 'early', pieces: 7, cells: 16, pieceSize: [2, 3], minFamilies: 0, maxDominoes: 10, free: [2, 2], ringMax: 4 },
-  { band: 'middle', pieces: 9, cells: 19, pieceSize: [2, 4], minFamilies: 1, maxDominoes: 10, free: [2, 2], ringMax: 6 },
-  { band: 'middle', pieces: 9, cells: 21, pieceSize: [2, 4], minFamilies: 2, maxDominoes: 10, free: [1, 2], ringMax: 7 },
-  { band: 'middle', pieces: 9, cells: 22, pieceSize: [2, 4], minFamilies: 2, maxDominoes: 10, free: [1, 1], ringMax: 8 },
-  { band: 'middle', pieces: 10, cells: 23, pieceSize: [2, 4], minFamilies: 2, maxDominoes: 10, free: [1, 1], ringMax: 10 },
+  { band: 'early', pieces: 5, cells: 11, free: [3, 3], ringMax: 0 },
+  { band: 'early', pieces: 6, cells: 13, free: [3, 3], ringMax: 1 },
+  { band: 'early', pieces: 6, cells: 14, free: [2, 3], ringMax: 2 },
+  { band: 'early', pieces: 7, cells: 15, free: [2, 2], ringMax: 3 },
+  { band: 'early', pieces: 7, cells: 16, free: [2, 2], ringMax: 4 },
+  { band: 'middle', pieces: 9, cells: 26, free: [2, 2], ringMax: 24 },
+  { band: 'middle', pieces: 9, cells: 27, free: [1, 2], ringMax: 24 },
+  { band: 'middle', pieces: 10, cells: 29, free: [1, 1], ringMax: 24 },
+  { band: 'middle', pieces: 10, cells: 30, free: [1, 1], ringMax: 24 },
+  { band: 'middle', pieces: 10, cells: 31, free: [1, 1], ringMax: 24 },
 ];
 
 const out: string[] = [
@@ -28,14 +32,23 @@ const out: string[] = [
   'export const generatedLevels: readonly Level[] = [',
 ];
 CURVE.forEach((plan, i) => {
-  const { band, ...params } = plan;
-  const result = searchBoard({ ...params, size: 6, tries: 1000, seed: 1000 + i }, RAILS);
+  const band = BANDS[plan.band];
+  const params: SearchParams = {
+    ...plan,
+    size: band.grid,
+    pieceSize: PIECE_SIZE,
+    minFamilies: band.mix ? 3 : 0,
+    maxDominoes: band.mix ? Math.floor(plan.pieces / 3) : plan.pieces,
+    tries: 1000,
+    seed: 1000 + i,
+  };
+  const result = searchBoard(params, RAILS);
   if (!result) throw new Error(`No board for level ${i + 1}`);
   const s = result.state;
   const filled = s.blocks.reduce((n, b) => n + b.shape.length, 0);
-  out.push(`  // Level ${i + 1} (${band}): ${s.blocks.length} pieces, ${filled} of 36 cells, ${result.pinned} pinned.`);
+  out.push(`  // Level ${i + 1} (${band.name}, ${s.size}x${s.size}): ${s.blocks.length} pieces, ${filled} of ${s.size * s.size} cells, ${result.pinned} pinned.`);
   for (const line of boardToText(s).split('\n')) out.push(`  //   ${line}`);
-  out.push(`  {`, `    id: '${i + 1}',`, `    start: {`, `      size: 6,`, `      moves: 0,`);
+  out.push(`  {`, `    id: '${i + 1}',`, `    start: {`, `      size: ${s.size},`, `      moves: 0,`);
   out.push(`      rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },`);
   out.push(`      blocks: [`);
   for (const b of s.blocks) {
