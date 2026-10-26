@@ -3,6 +3,7 @@ import { FAMILY_OF, KINDS, SHAPES, SIZE, type Kind } from './shapes';
 
 /** Everything that sets how hard a generated board is. */
 export interface SearchParams {
+  /** Grid is size x size. */
   readonly size: number;
   /** Exact number of pieces. */
   readonly pieces: number;
@@ -12,6 +13,8 @@ export interface SearchParams {
   readonly pieceSize: readonly [number, number];
   /** At least this many of L, T, S and Z must appear. */
   readonly minFamilies: number;
+  /** At most this many two-cell pieces. */
+  readonly maxDominoes: number;
   /** Pieces that can leave at the start, inclusive range. */
   readonly free: readonly [number, number];
   /** Central clustering: at most this many filled cells on the outer ring. */
@@ -67,11 +70,11 @@ export function searchBoard(params: SearchParams, rails: Rails): SearchResult | 
   return best;
 }
 
-/** Piece kinds whose sizes add up to exactly `cells`, with enough L/T/S/Z families. */
+/** Piece kinds whose sizes add up to exactly `cells`, with few enough dominoes and enough L/T/S/Z families. */
 function pickKinds(p: SearchParams, rand: () => number): Kind[] | null {
   const [lo, hi] = p.pieceSize;
   const bySize = (n: number) => KINDS.filter((k) => SIZE[k] === n);
-  for (let attempt = 0; attempt < 200; attempt++) {
+  for (let attempt = 0; attempt < 2000; attempt++) {
     const sizes = Array<number>(p.pieces).fill(lo);
     let extra = p.cells - lo * p.pieces;
     if (extra < 0 || extra > (hi - lo) * p.pieces) return null;
@@ -82,6 +85,7 @@ function pickKinds(p: SearchParams, rand: () => number): Kind[] | null {
         extra--;
       }
     }
+    if (sizes.filter((n) => n === 2).length > p.maxDominoes) continue;
     const kinds = sizes.map((n) => {
       const options = bySize(n);
       if (options.length === 0) throw new Error(`No piece of ${n} cells in the catalogue`);

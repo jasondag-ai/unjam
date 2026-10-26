@@ -10,15 +10,15 @@ type Plan = Omit<SearchParams, 'size' | 'tries' | 'seed'> & { readonly band: 'ea
 
 // Rising steadily: fill 31% -> 64%, clustering loosens, free pieces fall.
 const CURVE: readonly Plan[] = [
-  { band: 'early', pieces: 5, cells: 11, pieceSize: [2, 3], minFamilies: 0, free: [3, 3], ringMax: 0 },
-  { band: 'early', pieces: 6, cells: 13, pieceSize: [2, 3], minFamilies: 0, free: [3, 3], ringMax: 1 },
-  { band: 'early', pieces: 6, cells: 14, pieceSize: [2, 3], minFamilies: 0, free: [2, 3], ringMax: 2 },
-  { band: 'early', pieces: 7, cells: 15, pieceSize: [2, 3], minFamilies: 0, free: [2, 2], ringMax: 3 },
-  { band: 'early', pieces: 7, cells: 16, pieceSize: [2, 3], minFamilies: 0, free: [2, 2], ringMax: 4 },
-  { band: 'middle', pieces: 9, cells: 19, pieceSize: [2, 4], minFamilies: 1, free: [2, 2], ringMax: 6 },
-  { band: 'middle', pieces: 9, cells: 21, pieceSize: [2, 4], minFamilies: 2, free: [1, 2], ringMax: 7 },
-  { band: 'middle', pieces: 9, cells: 22, pieceSize: [2, 4], minFamilies: 2, free: [1, 1], ringMax: 8 },
-  { band: 'middle', pieces: 10, cells: 23, pieceSize: [2, 4], minFamilies: 2, free: [1, 1], ringMax: 10 },
+  { band: 'early', pieces: 5, cells: 11, pieceSize: [2, 3], minFamilies: 0, maxDominoes: 10, free: [3, 3], ringMax: 0 },
+  { band: 'early', pieces: 6, cells: 13, pieceSize: [2, 3], minFamilies: 0, maxDominoes: 10, free: [3, 3], ringMax: 1 },
+  { band: 'early', pieces: 6, cells: 14, pieceSize: [2, 3], minFamilies: 0, maxDominoes: 10, free: [2, 3], ringMax: 2 },
+  { band: 'early', pieces: 7, cells: 15, pieceSize: [2, 3], minFamilies: 0, maxDominoes: 10, free: [2, 2], ringMax: 3 },
+  { band: 'early', pieces: 7, cells: 16, pieceSize: [2, 3], minFamilies: 0, maxDominoes: 10, free: [2, 2], ringMax: 4 },
+  { band: 'middle', pieces: 9, cells: 19, pieceSize: [2, 4], minFamilies: 1, maxDominoes: 10, free: [2, 2], ringMax: 6 },
+  { band: 'middle', pieces: 9, cells: 21, pieceSize: [2, 4], minFamilies: 2, maxDominoes: 10, free: [1, 2], ringMax: 7 },
+  { band: 'middle', pieces: 9, cells: 22, pieceSize: [2, 4], minFamilies: 2, maxDominoes: 10, free: [1, 1], ringMax: 8 },
+  { band: 'middle', pieces: 10, cells: 23, pieceSize: [2, 4], minFamilies: 2, maxDominoes: 10, free: [1, 1], ringMax: 10 },
 ];
 
 const out: string[] = [
