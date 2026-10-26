@@ -3,7 +3,8 @@
 ## Status
 - **M0 engine: done**, accepted by Jason.
 - **M1 tap to exit: done**, accepted by Jason.
-- **Job 002 real boards: built**, waiting for Jason to clear it on his phone at http://10.0.0.30:5290/.
+- **Job 002 real boards: done.**
+- **Job 003 piece mix: built**, waiting for Jason to clear it on his phone at http://10.0.0.30:5290/.
 
 ## What exists
 - `src/engine/types.ts` — Cell, Block, Gate, State, Slides.
@@ -85,10 +86,28 @@ Model changed; supersedes M0 decisions 1, 4, 5, 6 and M1 decisions 10, 18, 20.
     tries was kept (8 of 12 pieces held by 2+ neighbours). The script is not the product generator.
 24. Glyphs stay per colour, so each rail's glyph matches its pieces.
 
+## Job 003: piece mix (2026-10-26)
+Jason's decisions: 8 to 10 pieces per 6x6 board, 60 to 75 percent full, at least half 3+ cells with a
+genuine L/T/S/Z mix, dominoes at most a third; shape mix beats fill if they fight. The 6x6 board
+is level 1; the 5x5 teaching idea is dropped. Supersedes decisions 21 and 22.
+- Level 1 regenerated in reverse: 8 pieces, 27 of 36 cells (75%). S, T, L, L, J, square, bar of
+  three, one domino. Two pieces free at the start (A and G), 8 taps to clear.
+- Level tests now check 8 to 10 pieces, 60 to 75 percent fill, dominoes at most a third, half or
+  more 3+ cells, at least three of L/T/S/Z (rotations; J counts as L). Rails, at-most-two-free,
+  taps-alone, colours and glyph tests kept.
+- Browser check at iPhone size: rejected tap leaves moves at 0, undo and restart work, 8 chained
+  taps clear it, worst frame 16.8 ms, no errors.
+
+## Job 003 decisions (engineer's call)
+25. Search wanted exactly two free pieces at the start (Jason: "a board where only two pieces can
+    move"); the test still allows at most two.
+26. Every colour appears at least once. Two of each was dropped: no 8-piece board with two free
+    pieces met it. Colours are 3 violet, 3 mint, 1 amber, 1 cyan.
+27. Chose the board with the widest shape mix over one with one more pinned piece but an empty
+    bottom row.
+
 ## Needs from Jason
-- Clear level 1 on the phone and judge whether it looks crowded and interlocked enough.
-- Decide item 21: keep 12+ pieces (mostly dominoes), or fewer pieces (about 8 to 10) with real
-  L/T/S/Z shapes at the same 60 to 75 percent fill.
+- Clear level 1 on the phone and confirm it reads as a mix of real shapes.
 
 ## Next step
 - On Jason's word after the phone check: next job.

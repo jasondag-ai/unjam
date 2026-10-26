@@ -5,14 +5,16 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 **Read [STANDING_RULES.md](STANDING_RULES.md) first. It overrides this file and the PRD; check every build against it.**
 
 ## The game
-- Boards are 5x5 for levels 1 to 5 and 6x6 from level 6 on. Blocks are polyominoes of 2 to 6 cells
-  (bars, squares, L, T, S, Z).
+- Boards are 6x6. Blocks are polyominoes of 2 to 6 cells (bars, squares, L, T, S, Z).
 - Four rails, one full-length rail per side, each a colour: top amber, left mint, right cyan,
   bottom violet. A block's colour names the side it leaves by.
 - Exit: a block travels straight toward its own side and leaves when every cell its shape passes
   through, all the way to the rail, is empty. Shape decides whether; colour decides where.
 - Sliding: a block moves one cell in any direction into space its whole shape fits.
-- Boards are dense and interlocked: 60 to 75 percent of cells filled.
+- Boards are dense and interlocked: 8 to 10 pieces, 60 to 75 percent of cells filled.
+- Piece mix: at least half the pieces 3 cells or more, with a genuine L, T, S or Z mix. Dominoes
+  are filler, at most a third of the pieces. If fill and shape mix fight, shape mix wins.
+- At most two pieces can leave at the start; the rule teaches itself. No 5x5 teaching levels.
 
 ## Stack
 - TypeScript, Vite, Canvas. No game engine, no framework.
@@ -34,7 +36,8 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 ## Milestones
 - M0 engine: `npm test` passes; `npx tsx src/engine/demo.ts` prints SOLVED. Done.
 - M1 tap to exit: done.
-- Job 002 real boards: rails, polyominoes, free sliding, one packed 6x6 board. Built.
+- Job 002 real boards: rails, polyominoes, free sliding, one packed 6x6 board. Done.
+- Job 003 piece mix: level 1 regenerated as 8 real-shape pieces. Built.
   - Portrait, board centred, 16px gutters.
   - Edge-lit vector look. Ground #060B14, faint grid behind the board.
   - Blocks: rounded rectangles, 1.5px lit border, translucent fill of the same colour, outer glow.
