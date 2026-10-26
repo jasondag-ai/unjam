@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyExit, boardToText, canExit, isSolved, validateState, type State } from '../engine';
+import { applyExit, boardToText, canExit, isSolved, validateState, type Cell, type State } from '../engine';
 import { world1 } from './world1';
 
 /**
@@ -19,6 +19,32 @@ function tapSolution(state: State): string[] | null {
   return taps;
 }
 
+const key = (cells: readonly Cell[]) => {
+  const r0 = Math.min(...cells.map((c) => c.row));
+  const c0 = Math.min(...cells.map((c) => c.col));
+  return cells.map((c) => `${c.row - r0},${c.col - c0}`).sort().join(' ');
+};
+const turns = (cells: readonly Cell[]) => {
+  const out = [cells];
+  for (let i = 0; i < 3; i++) out.push(out[i]!.map((c) => ({ row: c.col, col: -c.row })));
+  return out.map(key);
+};
+const parse = (rows: string[]) => rows.flatMap((line, r) => [...line].flatMap((ch, c) => (ch === '#' ? [{ row: r, col: c }] : [])));
+const FAMILIES: Record<string, string[][]> = {
+  L: [['#.', '##'], ['#.', '#.', '##'], ['.#', '.#', '##']],
+  T: [['###', '.#.']],
+  S: [['.##', '##.']],
+  Z: [['##.', '.##']],
+};
+/** L, T, S or Z (any rotation; J counts as L), or null for bars, squares and dominoes. */
+function family(shape: readonly Cell[]): string | null {
+  const k = key(shape);
+  for (const [name, shapes] of Object.entries(FAMILIES)) {
+    if (shapes.some((rows) => turns(parse(rows)).includes(k))) return name;
+  }
+  return null;
+}
+
 describe('world1 level 1', () => {
   const level = world1.levels[0]!;
   const s = level.start;
@@ -34,32 +60,44 @@ describe('world1 level 1', () => {
     expect(boardToText(s)).toBe(
       [
         '+ a a a a a a +',
-        'm . A A B C C c',
-        'm . D D B E . c',
-        'm . F F E E . c',
-        'm . . . E G H c',
-        'm I . J K G H c',
-        'm I J J K L L c',
+        'm . A A . . . c',
+        'm . B A C C D c',
+        'm B B C C E D c',
+        'm F F F . E D c',
+        'm . F G G E E c',
+        'm H H G G . . c',
         '+ v v v v v v +',
       ].join('\n'),
     );
   });
 
-  it('is packed: 12 to 16 pieces filling 60 to 75 percent of the cells', () => {
-    expect(s.blocks.length).toBeGreaterThanOrEqual(12);
-    expect(s.blocks.length).toBeLessThanOrEqual(16);
+  it('is packed: 8 to 10 pieces filling 60 to 75 percent of the cells', () => {
+    expect(s.blocks.length).toBeGreaterThanOrEqual(8);
+    expect(s.blocks.length).toBeLessThanOrEqual(10);
     expect(filled / (s.size * s.size)).toBeGreaterThanOrEqual(0.6);
     expect(filled / (s.size * s.size)).toBeLessThanOrEqual(0.75);
   });
 
-  it('has pieces that are not straight bars, and every colour', () => {
-    const bent = s.blocks.filter((b) => new Set(b.shape.map((c) => c.row)).size > 1 && new Set(b.shape.map((c) => c.col)).size > 1);
-    expect(bent.length).toBeGreaterThanOrEqual(2);
+  it('is a mix of real shapes, not rows of pairs', () => {
+    const n = s.blocks.length;
+    expect(s.blocks.filter((b) => b.shape.length === 2).length).toBeLessThanOrEqual(n / 3);
+    expect(s.blocks.filter((b) => b.shape.length >= 3).length).toBeGreaterThanOrEqual(n / 2);
+    const families = new Set(s.blocks.map((b) => family(b.shape)).filter(Boolean));
+    expect(families.size).toBeGreaterThanOrEqual(3);
+  });
+
+  it('uses every colour', () => {
     expect(new Set(s.blocks.map((b) => b.colour)).size).toBe(4);
   });
 
   it('lets at most two pieces leave at the start', () => {
     expect(s.blocks.filter((b) => canExit(s, b.id)).length).toBeLessThanOrEqual(2);
+  });
+
+  it('classifies shapes', () => {
+    expect(family(parse(['###', '.#.']))).toBe('T');
+    expect(family(parse(['#', '#', '#']))).toBeNull();
+    expect(family(parse(['.#', '.#', '##']))).toBe('L');
   });
 
   it('clears by taps alone, one tap per piece', () => {

@@ -11,16 +11,17 @@ const p = (id: string, colour: Colour, row: number, col: number, rows: string[])
 
 const rails: Rails = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' };
 
-// Level 1: 6x6, 12 pieces, 27 of 36 cells. Built in reverse (rule 6): each
+// Level 1: 6x6, 8 pieces, 27 of 36 cells: an S, a T, two L's, a J, a
+// square, a bar of three and one domino. Built in reverse (rule 6): each
 // piece was placed so it can leave past the pieces placed before it, and
 // where it blocked the most of them. Two pieces can leave at the start.
 //   + a a a a a a +
-//   m . A A B C C c
-//   m . D D B E . c
-//   m . F F E E . c
-//   m . . . E G H c
-//   m I . J K G H c
-//   m I J J K L L c
+//   m . A A . . . c
+//   m . B A C C D c
+//   m B B C C E D c
+//   m F F F . E D c
+//   m . F G G E E c
+//   m H H G G . . c
 //   + v v v v v v +
 export const world1: World = {
   id: 'world1',
@@ -40,18 +41,14 @@ export const world1: World = {
         moves: 0,
         rails,
         blocks: [
-          p('A', 'violet', 0, 1, ['##']),
-          p('B', 'mint', 0, 3, ['#', '#']),
-          p('C', 'amber', 0, 4, ['##']),
-          p('D', 'violet', 1, 1, ['##']),
-          p('E', 'violet', 1, 3, ['.#', '##', '#.']),
-          p('F', 'cyan', 2, 1, ['##']),
-          p('G', 'cyan', 3, 4, ['#', '#']),
-          p('H', 'violet', 3, 5, ['#', '#']),
-          p('I', 'amber', 4, 0, ['#', '#']),
-          p('J', 'mint', 4, 1, ['.#', '##']),
-          p('K', 'mint', 4, 3, ['#', '#']),
-          p('L', 'mint', 5, 4, ['##']),
+          p('A', 'amber', 0, 1, ['##', '.#']),
+          p('B', 'violet', 1, 0, ['.#', '##']),
+          p('C', 'mint', 1, 2, ['.##', '##.']),
+          p('D', 'mint', 1, 5, ['#', '#', '#']),
+          p('E', 'mint', 2, 4, ['#.', '#.', '##']),
+          p('F', 'violet', 3, 0, ['###', '.#.']),
+          p('G', 'violet', 4, 2, ['##', '##']),
+          p('H', 'cyan', 5, 0, ['##']),
         ],
       },
     },
