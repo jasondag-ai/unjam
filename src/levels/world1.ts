@@ -1,23 +1,27 @@
-import type { Block, Colour } from '../engine';
+import type { Block, Colour, Rails } from '../engine';
 import type { World } from './types';
 
-const h = (id: string, colour: Colour, row: number, col: number, len: number): Block => ({
-  id, colour, anchor: { row, col }, axis: 'h',
-  shape: Array.from({ length: len }, (_, i) => ({ row: 0, col: i })),
-});
-const v = (id: string, colour: Colour, row: number, col: number, len: number): Block => ({
-  id, colour, anchor: { row, col }, axis: 'v',
-  shape: Array.from({ length: len }, (_, i) => ({ row: i, col: 0 })),
+/** A piece drawn as rows of '#' and '.', anchored at its top-left. */
+const p = (id: string, colour: Colour, row: number, col: number, rows: string[]): Block => ({
+  id,
+  colour,
+  anchor: { row, col },
+  shape: rows.flatMap((line, r) => [...line].flatMap((ch, c) => (ch === '#' ? [{ row: r, col: c }] : []))),
 });
 
-// Level 1, hand-authored, cleared by taps alone. Only B can leave at the start.
-//   +-v-a---a-m-+
-//   | A A . B . c
-//   | C . D B . |
-//   c C E D F F |
-//   | G E . . H |
-//   c G . I I H c
-//   +-----m-----+
+const rails: Rails = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' };
+
+// Level 1: 6x6, 12 pieces, 27 of 36 cells. Built in reverse (rule 6): each
+// piece was placed so it can leave past the pieces placed before it, and
+// where it blocked the most of them. Two pieces can leave at the start.
+//   + a a a a a a +
+//   m . A A B C C c
+//   m . D D B E . c
+//   m . F F E E . c
+//   m . . . E G H c
+//   m I . J K G H c
+//   m I J J K L L c
+//   + v v v v v v +
 export const world1: World = {
   id: 'world1',
   palette: {
@@ -27,33 +31,27 @@ export const world1: World = {
     blocks: { cyan: '#4CD6E6', amber: '#F2A93B', violet: '#7D6CF5', mint: '#5BE8A8' },
   },
   glyphs: { cyan: 'square', amber: 'triangle', violet: 'circle', mint: 'diamond' },
+  rails,
   levels: [
     {
-      id: '1-1',
+      id: '1',
       start: {
-        size: 5,
+        size: 6,
         moves: 0,
+        rails,
         blocks: [
-          h('A', 'cyan', 0, 0, 2),
-          v('B', 'amber', 0, 3, 2),
-          v('C', 'violet', 1, 0, 2),
-          v('D', 'mint', 1, 2, 2),
-          v('E', 'amber', 2, 1, 2),
-          h('F', 'cyan', 2, 3, 2),
-          v('G', 'violet', 3, 0, 2),
-          v('H', 'mint', 3, 4, 2),
-          h('I', 'cyan', 4, 2, 2),
-        ],
-        gates: [
-          { side: 'top', index: 0, colour: 'violet' },
-          { side: 'top', index: 1, colour: 'amber' },
-          { side: 'top', index: 3, colour: 'amber' },
-          { side: 'top', index: 4, colour: 'mint' },
-          { side: 'right', index: 0, colour: 'cyan' },
-          { side: 'right', index: 4, colour: 'cyan' },
-          { side: 'bottom', index: 2, colour: 'mint' },
-          { side: 'left', index: 2, colour: 'cyan' },
-          { side: 'left', index: 4, colour: 'cyan' },
+          p('A', 'violet', 0, 1, ['##']),
+          p('B', 'mint', 0, 3, ['#', '#']),
+          p('C', 'amber', 0, 4, ['##']),
+          p('D', 'violet', 1, 1, ['##']),
+          p('E', 'violet', 1, 3, ['.#', '##', '#.']),
+          p('F', 'cyan', 2, 1, ['##']),
+          p('G', 'cyan', 3, 4, ['#', '#']),
+          p('H', 'violet', 3, 5, ['#', '#']),
+          p('I', 'amber', 4, 0, ['#', '#']),
+          p('J', 'mint', 4, 1, ['.#', '##']),
+          p('K', 'mint', 4, 3, ['#', '#']),
+          p('L', 'mint', 5, 4, ['##']),
         ],
       },
     },

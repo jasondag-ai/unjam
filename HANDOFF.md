@@ -2,7 +2,8 @@
 
 ## Status
 - **M0 engine: done**, accepted by Jason.
-- **M1 tap to exit: built**, waiting for Jason to clear it on his phone at http://10.0.0.30:5290/.
+- **M1 tap to exit: done**, accepted by Jason.
+- **Job 002 real boards: built**, waiting for Jason to clear it on his phone at http://10.0.0.30:5290/.
 
 ## What exists
 - `src/engine/types.ts` — Cell, Block, Gate, State, Slides.
@@ -54,8 +55,40 @@
 20. Blocks are drawn as the bounding box of their cells. Fine for bars and single cells; L shapes
     would need a new drawing path.
 
+## Job 002: real boards (2026-10-25)
+Model changed; supersedes M0 decisions 1, 4, 5, 6 and M1 decisions 10, 18, 20.
+- Rails replace per-segment gates: `State.rails` names each side's colour (top amber, right cyan,
+  bottom violet, left mint). The world holds them too (`World.rails`).
+- `canExit` returns the side, or null. The block sweeps toward its colour's side; every cell its
+  shape passes through to the frame must be empty.
+- No axis. Pieces are 2 to 6 connected cells. `applySlide(state, id, dir)` moves exactly one cell in
+  any direction the whole shape fits. `legalSlides` still reports the full distance each way.
+- `validateState` checks piece size, connectedness, overlap, bounds, and four distinct rail colours.
+- Renderer draws each piece's real outline (inset, rounded inner and outer corners) and four
+  full-length rails, each with its glyph outside the frame at the middle.
+- Hit test uses each cell of a piece as drawn; reach into free space is 0.6 of a cell.
+- Blocked pieces shake toward the rail they want.
+- Level 1 is now 6x6. Tests prove: 12 pieces, 27 of 36 cells (75%), 2 free at the start, all four
+  colours, bent pieces present, clears by taps alone in 12 taps.
+- Browser check at iPhone size: ready in under 0.1 s on a warm server, rejected tap leaves moves at 0,
+  undo and restart work, all 12 taps chained 50 ms apart clear it, worst frame 16.8 ms, no errors.
+
+## Job 002 decisions (engineer's call)
+21. Item 7 numbers conflict with L/T/S/Z variety on 6x6: 12 pieces of at least 2 cells is already 24
+    cells, and 75% is 27. I kept every stated number. Result: 9 dominoes, 2 L trominoes, 1 S
+    tetromino. Jason was asked and declined to answer in-session; open question below.
+22. The 6x6 board is level 1, as item 7 says, although item 6 says levels 1 to 5 are 5x5. It is the
+    only board until more levels are in scope.
+23. Rule 6 (generated in reverse, never hand-authored past M1): the board was built in reverse with a
+    throwaway search script outside the repo. Each piece was placed so it can leave past the pieces
+    already placed, choosing spots that block the most free pieces. Then the most pinned of many
+    tries was kept (8 of 12 pieces held by 2+ neighbours). The script is not the product generator.
+24. Glyphs stay per colour, so each rail's glyph matches its pieces.
+
 ## Needs from Jason
-- Clear level 1 on the phone (same Wi-Fi as the Mac) and say whether every tap feels immediate.
+- Clear level 1 on the phone and judge whether it looks crowded and interlocked enough.
+- Decide item 21: keep 12+ pieces (mostly dominoes), or fewer pieces (about 8 to 10) with real
+  L/T/S/Z shapes at the same 60 to 75 percent fill.
 
 ## Next step
 - On Jason's word after the phone check: next job.

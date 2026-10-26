@@ -2,9 +2,6 @@
 
 export type Colour = 'cyan' | 'amber' | 'violet' | 'mint';
 
-/** 'free' is for single-cell blocks, which may move along either axis. */
-export type Axis = 'h' | 'v' | 'free';
-
 export type Side = 'top' | 'right' | 'bottom' | 'left';
 
 export type Direction = 'up' | 'right' | 'down' | 'left';
@@ -14,6 +11,7 @@ export interface Cell {
   readonly col: number;
 }
 
+/** A polyomino of 2 to 6 cells. */
 export interface Block {
   readonly id: string;
   readonly colour: Colour;
@@ -21,28 +19,23 @@ export interface Block {
   readonly anchor: Cell;
   /** Cell offsets from the anchor. */
   readonly shape: readonly Cell[];
-  readonly axis: Axis;
 }
 
 /**
- * An edge segment. `index` is the column for top/bottom gates and the row
- * for left/right gates. Every edge segment without a gate is wall.
+ * One full-length rail per side, each a different colour. A block's colour
+ * names the side it leaves by.
  */
-export interface Gate {
-  readonly side: Side;
-  readonly index: number;
-  readonly colour: Colour;
-}
+export type Rails = Readonly<Record<Side, Colour>>;
 
 export interface State {
-  /** Board is size x size. Unjam boards are 5. */
+  /** Board is size x size: 5 for levels 1 to 5, 6 after. */
   readonly size: number;
   readonly blocks: readonly Block[];
-  readonly gates: readonly Gate[];
+  readonly rails: Rails;
   readonly moves: number;
 }
 
-/** Cells a block can slide in each direction. 0 for directions off its axis. */
+/** Cells a block can slide in each direction before it hits a block or the frame. */
 export interface Slides {
   readonly up: number;
   readonly right: number;

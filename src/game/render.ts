@@ -1,6 +1,6 @@
-import type { Block, Gate } from '../engine';
+import type { Block, Rails, Side } from '../engine';
 import type { Glyph, World } from '../levels/types';
-import { blockRect, type Layout, type Rect } from './layout';
+import { blockMark, blockOutline, blockRect, type Layout, type Point, type Rect } from './layout';
 
 /** One block to draw this frame, offset from its resting place. */
 export interface Draw {
@@ -8,7 +8,7 @@ export interface Draw {
   readonly dx: number;
   readonly dy: number;
   readonly alpha: number;
-  /** Clip to the board so an exiting block disappears into its gate. */
+  /** Clip to the board so an exiting block disappears into its rail. */
   readonly clip: boolean;
 }
 
@@ -27,10 +27,10 @@ export class Renderer {
 
   constructor(private readonly ctx: CanvasRenderingContext2D, private readonly world: World) {}
 
-  resize(layout: Layout, gates: readonly Gate[]): void {
+  resize(layout: Layout, rails: Rails): void {
     this.layout = layout;
     this.sprites.clear();
-    this.background = this.paintBackground(layout, gates);
+    this.background = this.paintBackground(layout, rails);
   }
 
   frame(draws: readonly Draw[]): void {
@@ -58,24 +58,28 @@ export class Renderer {
   }
 
   private sprite(block: Block, r: Rect): HTMLCanvasElement {
-    const key = `${block.colour}:${r.w}x${r.h}`;
+    const shapeKey = block.shape.map((c) => `${c.row}.${c.col}`).join(' ');
+    const key = `${block.colour}:${shapeKey}`;
     const cached = this.sprites.get(key);
     if (cached) return cached;
-    const dpr = this.layout!.dpr;
+    const layout = this.layout!;
+    const dpr = layout.dpr;
     const pad = GLOW * 2;
     const canvas = document.createElement('canvas');
     canvas.width = Math.ceil((r.w + pad * 2) * dpr);
     canvas.height = Math.ceil((r.h + pad * 2) * dpr);
     const g = canvas.getContext('2d')!;
     g.scale(dpr, dpr);
+    // Sprite space: the block's bounding box starts at (pad, pad).
+    g.translate(pad - r.x, pad - r.y);
     const colour = this.world.palette.blocks[block.colour];
-    const radius = Math.min(r.w, r.h) * 0.18;
-    const box = { x: pad, y: pad, w: r.w, h: r.h };
+    const outline = blockOutline(layout, block);
+    const radius = (layout.cell - 2 * layout.inset) * 0.18;
 
     // Translucent fill of the block's own colour.
     g.globalAlpha = 0.16;
     g.fillStyle = colour;
-    roundRect(g, box, radius);
+    roundPolygon(g, outline, radius);
     g.fill();
 
     // Outer glow, then the lit border on top of it.
@@ -84,21 +88,21 @@ export class Renderer {
     g.shadowBlur = GLOW;
     g.strokeStyle = colour;
     g.lineWidth = BORDER;
-    roundRect(g, inflate(box, -BORDER / 2), radius);
+    roundPolygon(g, insetPolygon(outline, BORDER / 2), radius);
     g.stroke();
     g.shadowBlur = GLOW / 2;
     g.stroke();
 
-    // Glyph mark (rule 1), always drawn.
+    // Glyph mark (rule 1), always drawn, in the cell nearest the block's middle.
     g.shadowBlur = 4;
-    const size = Math.min(r.w, r.h) * 0.36;
-    drawGlyph(g, this.world.glyphs[block.colour], box.x + box.w / 2, box.y + box.h / 2, size, colour, 2);
+    const mark = blockMark(layout, block);
+    drawGlyph(g, this.world.glyphs[block.colour], mark.x, mark.y, (layout.cell - 2 * layout.inset) * 0.36, colour, 2);
 
     this.sprites.set(key, canvas);
     return canvas;
   }
 
-  private paintBackground(layout: Layout, gates: readonly Gate[]): HTMLCanvasElement {
+  private paintBackground(layout: Layout, rails: Rails): HTMLCanvasElement {
     const { palette, glyphs } = this.world;
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(layout.width * layout.dpr);
@@ -127,44 +131,68 @@ export class Renderer {
     g.strokeStyle = palette.frame;
     g.strokeRect(board.x - 0.5, board.y - 0.5, board.w + 1, board.h + 1);
 
-    // Gates: glowing bars on the frame, with their glyph just outside so a
-    // gate is never told apart by colour alone (rule 1).
-    for (const gate of gates) {
-      const colour = palette.blocks[gate.colour];
-      const { bar, mark } = gateGeometry(layout, gate);
+    // Rails: one glowing bar the full length of each side, with its glyph
+    // just outside so a rail is never told apart by colour alone (rule 1).
+    for (const side of ['top', 'right', 'bottom', 'left'] as const) {
+      const colour = palette.blocks[rails[side]];
+      const { bar, mark } = railGeometry(layout, side);
       g.fillStyle = colour;
       g.shadowColor = colour;
       g.shadowBlur = 14;
       roundRect(g, bar, Math.min(bar.w, bar.h) / 2);
       g.fill();
       g.shadowBlur = 0;
-      drawGlyph(g, glyphs[gate.colour], mark.x, mark.y, 9, colour, 1.5);
+      drawGlyph(g, glyphs[rails[side]], mark.x, mark.y, 9, colour, 1.5);
     }
     return canvas;
   }
 }
 
-function gateGeometry(layout: Layout, gate: Gate): { bar: Rect; mark: { x: number; y: number } } {
-  const { board, cell, inset } = layout;
+function railGeometry(layout: Layout, side: Side): { bar: Rect; mark: Point } {
+  const { board, inset } = layout;
   const t = 4;
-  const along = gate.index * cell + inset * 1.5;
-  const len = cell - inset * 3;
-  const mid = gate.index * cell + cell / 2;
+  const gap = inset * 1.5; // keeps the corners apart so each rail reads as its own
   const out = 16;
-  switch (gate.side) {
+  const midX = board.x + board.w / 2;
+  const midY = board.y + board.h / 2;
+  switch (side) {
     case 'top':
-      return { bar: { x: board.x + along, y: board.y - t / 2, w: len, h: t }, mark: { x: board.x + mid, y: board.y - out } };
+      return { bar: { x: board.x + gap, y: board.y - t / 2, w: board.w - 2 * gap, h: t }, mark: { x: midX, y: board.y - out } };
     case 'bottom':
-      return { bar: { x: board.x + along, y: board.y + board.h - t / 2, w: len, h: t }, mark: { x: board.x + mid, y: board.y + board.h + out } };
+      return { bar: { x: board.x + gap, y: board.y + board.h - t / 2, w: board.w - 2 * gap, h: t }, mark: { x: midX, y: board.y + board.h + out } };
     case 'left':
-      return { bar: { x: board.x - t / 2, y: board.y + along, w: t, h: len }, mark: { x: board.x - out, y: board.y + mid } };
+      return { bar: { x: board.x - t / 2, y: board.y + gap, w: t, h: board.h - 2 * gap }, mark: { x: board.x - out, y: midY } };
     case 'right':
-      return { bar: { x: board.x + board.w - t / 2, y: board.y + along, w: t, h: len }, mark: { x: board.x + board.w + out, y: board.y + mid } };
+      return { bar: { x: board.x + board.w - t / 2, y: board.y + gap, w: t, h: board.h - 2 * gap }, mark: { x: board.x + board.w + out, y: midY } };
   }
 }
 
-function inflate(r: Rect, by: number): Rect {
-  return { x: r.x - by, y: r.y - by, w: r.w + by * 2, h: r.h + by * 2 };
+/** Shrink a clockwise right-angled polygon by `by` (same rule as blockOutline). */
+function insetPolygon(points: readonly Point[], by: number): Point[] {
+  return points.map((p, i) => {
+    const a = points[(i + points.length - 1) % points.length]!;
+    const b = points[(i + 1) % points.length]!;
+    const d1 = { x: Math.sign(p.x - a.x), y: Math.sign(p.y - a.y) };
+    const d2 = { x: Math.sign(b.x - p.x), y: Math.sign(b.y - p.y) };
+    return { x: p.x + by * (-d1.y - d2.y), y: p.y + by * (d1.x + d2.x) };
+  });
+}
+
+/** Polygon with every corner rounded, outer and inner alike. */
+function roundPolygon(g: CanvasRenderingContext2D, points: readonly Point[], radius: number): void {
+  const n = points.length;
+  const last = points[n - 1]!;
+  const first = points[0]!;
+  g.beginPath();
+  g.moveTo((last.x + first.x) / 2, (last.y + first.y) / 2);
+  for (let i = 0; i < n; i++) {
+    const p = points[i]!;
+    const q = points[(i + 1) % n]!;
+    const prev = points[(i + n - 1) % n]!;
+    const r = Math.min(radius, Math.hypot(p.x - prev.x, p.y - prev.y) / 2, Math.hypot(q.x - p.x, q.y - p.y) / 2);
+    g.arcTo(p.x, p.y, q.x, q.y, r);
+  }
+  g.closePath();
 }
 
 function roundRect(g: CanvasRenderingContext2D, r: Rect, radius: number): void {

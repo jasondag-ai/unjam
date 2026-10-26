@@ -5,6 +5,7 @@ import {
   commit,
   createHistory,
   current,
+  exitSide,
   findBlock,
   isSolved,
   restart,
@@ -15,7 +16,7 @@ import {
 } from '../engine';
 import type { Level, World } from '../levels/types';
 import { hitTest } from './hit';
-import { blockRect, computeLayout, type Layout } from './layout';
+import { blockCellRects, blockCentre, blockRect, computeLayout, type Layout } from './layout';
 import { Renderer, type Draw } from './render';
 
 const EXIT_MS = 220; // rule 11: under 300 ms
@@ -58,7 +59,7 @@ export function startGame(hud: Hud, world: World, level: Level): void {
     const top = hud.header.getBoundingClientRect().bottom;
     const bottom = height - hud.footer.getBoundingClientRect().top;
     layout = computeLayout(width, height, dpr, level.start.size, top, bottom);
-    renderer.resize(layout, level.start.gates);
+    renderer.resize(layout, level.start.rails);
     requestFrame();
   }
 
@@ -74,10 +75,10 @@ export function startGame(hud: Hud, world: World, level: Level): void {
   function tap(id: string, now: number): void {
     const state = current(history);
     if (!findBlock(state, id)) return;
-    const gate = canExit(state, id);
-    if (gate) {
+    const side = canExit(state, id);
+    if (side) {
       anims = anims.filter((a) => !(a.kind === 'shake' && a.id === id));
-      anims.push({ kind: 'exit', block: findBlock(state, id)!, side: gate.side, start: now });
+      anims.push({ kind: 'exit', block: findBlock(state, id)!, side, start: now });
       history = commit(history, applyExit(state, id));
       updateHud();
     } else {
@@ -139,7 +140,9 @@ export function startGame(hud: Hud, world: World, level: Level): void {
     }
     const t = elapsed / SHAKE_MS;
     const offset = SHAKE_PX * Math.sin(t * Math.PI * 6) * (1 - t);
-    const vertical = block.axis === 'v';
+    // Shake toward the rail it wants to reach.
+    const side = exitSide(current(history), block);
+    const vertical = side === 'top' || side === 'bottom';
     return { block, dx: vertical ? 0 : offset, dy: vertical ? offset : 0, alpha: 1, clip: false };
   }
 
@@ -152,7 +155,11 @@ export function startGame(hud: Hud, world: World, level: Level): void {
   };
   hud.canvas.addEventListener('pointerdown', (e) => {
     const { x, y } = pointAt(e);
-    const targets = current(history).blocks.map((block) => ({ id: block.id, rect: blockRect(layout, block) }));
+    const targets = current(history).blocks.map((block) => ({
+      id: block.id,
+      rects: blockCellRects(layout, block),
+      centre: blockCentre(layout, block),
+    }));
     downs.set(e.pointerId, { id: hitTest(targets, x, y, layout.cell), x, y });
   });
   hud.canvas.addEventListener('pointerup', (e) => {

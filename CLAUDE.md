@@ -5,11 +5,14 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 **Read [STANDING_RULES.md](STANDING_RULES.md) first. It overrides this file and the PRD; check every build against it.**
 
 ## The game
-- A 5x5 board holds coloured blocks. Each board edge segment is either wall or a coloured gate.
-- A block leaves by travelling in a straight line along its own axis to a gate of its colour,
-  with no other block in the lane, and the gate aligned with the block's own rows or columns.
-- Blocks also slide along their axis into free cells. That is how a lane gets opened.
-- Single-cell blocks are free: they move and exit along either axis.
+- Boards are 5x5 for levels 1 to 5 and 6x6 from level 6 on. Blocks are polyominoes of 2 to 6 cells
+  (bars, squares, L, T, S, Z).
+- Four rails, one full-length rail per side, each a colour: top amber, left mint, right cyan,
+  bottom violet. A block's colour names the side it leaves by.
+- Exit: a block travels straight toward its own side and leaves when every cell its shape passes
+  through, all the way to the rail, is empty. Shape decides whether; colour decides where.
+- Sliding: a block moves one cell in any direction into space its whole shape fits.
+- Boards are dense and interlocked: 60 to 75 percent of cells filled.
 
 ## Stack
 - TypeScript, Vite, Canvas. No game engine, no framework.
@@ -26,25 +29,26 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - The move count lives on the state. Slides and exits add 1; rejected moves add nothing.
 - `isSolved` is true when no blocks remain.
 - Rendering and input live outside `src/engine/` and only call the engine.
+- Slides move one cell and add 1 to the move count.
 
 ## Milestones
 - M0 engine: `npm test` passes; `npx tsx src/engine/demo.ts` prints SOLVED. Done.
-- M1 tap to exit: canvas renderer and tap input. Built; waiting for Jason's phone check.
+- M1 tap to exit: done.
+- Job 002 real boards: rails, polyominoes, free sliding, one packed 6x6 board. Built.
   - Portrait, board centred, 16px gutters.
   - Edge-lit vector look. Ground #060B14, faint grid behind the board.
   - Blocks: rounded rectangles, 1.5px lit border, translucent fill of the same colour, outer glow.
   - Colours: cyan #4CD6E6, amber #F2A93B, violet #7D6CF5, mint #5BE8A8.
-  - Gates are glowing bars on the frame.
+  - Rails are glowing bars along each side of the frame.
   - Every block carries a distinct glyph (square, triangle, circle, diamond). Always on.
   - Hit areas at least 44 CSS px, expanded away from neighbours; a tap between two blocks goes
     to the nearer block centre.
   - Tap: if `canExit`, animate out of its gate in under 300ms and accept input at once.
     Otherwise shake 4px.
-  - One hand-authored 5x5 level, solvable by tapping alone.
   - Move counter in the corner. Undo button. Restart button.
   - Gate: runs with `npm run dev`, Jason clears it on his phone over the local network,
     every tap feels immediate.
-- Out of scope for job 001: drag, art, sound, more levels.
+- Not built yet: drag input, generator, sound, stars, menus, more levels.
 
 ## Working rules
 - One question at a time, with your recommended answer.

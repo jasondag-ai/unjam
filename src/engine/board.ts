@@ -1,8 +1,9 @@
-import type { Axis, Block, Cell, Direction, Side, State } from './types';
+import type { Block, Cell, Direction, Side, State } from './types';
 
 export const BOARD_SIZE = 5;
+export const MIN_PIECE = 2;
+export const MAX_PIECE = 6;
 
-/** Clockwise from the top. Also the order canExit tries directions in. */
 export const DIRECTIONS: readonly Direction[] = ['up', 'right', 'down', 'left'];
 
 export const DELTA: Readonly<Record<Direction, Cell>> = {
@@ -12,18 +13,14 @@ export const DELTA: Readonly<Record<Direction, Cell>> = {
   left: { row: 0, col: -1 },
 };
 
-export const SIDE_OF: Readonly<Record<Direction, Side>> = {
-  up: 'top',
+export const DIRECTION_TO: Readonly<Record<Side, Direction>> = {
+  top: 'up',
   right: 'right',
-  down: 'bottom',
+  bottom: 'down',
   left: 'left',
 };
 
-export function directionsFor(axis: Axis): readonly Direction[] {
-  if (axis === 'h') return ['right', 'left'];
-  if (axis === 'v') return ['up', 'down'];
-  return DIRECTIONS;
-}
+export const SIDES: readonly Side[] = ['top', 'right', 'bottom', 'left'];
 
 export function cellsOf(block: Block): Cell[] {
   return block.shape.map((o) => ({ row: block.anchor.row + o.row, col: block.anchor.col + o.col }));
@@ -54,6 +51,23 @@ export function isFreeFor(occ: Map<string, string>, cell: Cell, blockId: string)
   return owner === undefined || owner === blockId;
 }
 
+function isConnected(cells: readonly Cell[]): boolean {
+  const keys = new Set(cells.map(key));
+  const seen = new Set<string>([key(cells[0]!)]);
+  const queue = [cells[0]!];
+  while (queue.length > 0) {
+    const c = queue.pop()!;
+    for (const d of Object.values(DELTA)) {
+      const k = key({ row: c.row + d.row, col: c.col + d.col });
+      if (keys.has(k) && !seen.has(k)) {
+        seen.add(k);
+        queue.push({ row: c.row + d.row, col: c.col + d.col });
+      }
+    }
+  }
+  return seen.size === keys.size;
+}
+
 /** Throws on a malformed state. Use when building levels, not per move. */
 export function validateState(state: State): void {
   const occ = new Map<string, string>();
@@ -61,10 +75,10 @@ export function validateState(state: State): void {
   for (const block of state.blocks) {
     if (ids.has(block.id)) throw new Error(`Duplicate block id ${block.id}`);
     ids.add(block.id);
-    if (block.shape.length === 0) throw new Error(`Block ${block.id} has no cells`);
-    const single = block.shape.length === 1;
-    if (single && block.axis !== 'free') throw new Error(`Single-cell block ${block.id} must be 'free'`);
-    if (!single && block.axis === 'free') throw new Error(`Multi-cell block ${block.id} needs an axis`);
+    const n = block.shape.length;
+    if (n < MIN_PIECE || n > MAX_PIECE) throw new Error(`Block ${block.id} has ${n} cells, needs ${MIN_PIECE} to ${MAX_PIECE}`);
+    if (new Set(block.shape.map(key)).size !== n) throw new Error(`Block ${block.id} repeats a cell`);
+    if (!isConnected(block.shape)) throw new Error(`Block ${block.id} is not one connected piece`);
     for (const cell of cellsOf(block)) {
       if (!inBounds(state, cell)) throw new Error(`Block ${block.id} is off the board at ${key(cell)}`);
       const other = occ.get(key(cell));
@@ -72,11 +86,7 @@ export function validateState(state: State): void {
       occ.set(key(cell), block.id);
     }
   }
-  const gates = new Set<string>();
-  for (const gate of state.gates) {
-    const g = `${gate.side}:${gate.index}`;
-    if (gates.has(g)) throw new Error(`Duplicate gate ${g}`);
-    gates.add(g);
-    if (gate.index < 0 || gate.index >= state.size) throw new Error(`Gate ${g} is off the board`);
+  if (new Set(SIDES.map((s) => state.rails[s])).size !== SIDES.length) {
+    throw new Error('Each side needs its own rail colour');
   }
 }

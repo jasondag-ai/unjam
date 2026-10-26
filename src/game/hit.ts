@@ -1,8 +1,10 @@
-import { MIN_TARGET, type Rect } from './layout';
+import { MIN_TARGET, type Point, type Rect } from './layout';
 
 export interface Target {
   readonly id: string;
-  readonly rect: Rect;
+  /** The block as drawn, one rectangle per cell. */
+  readonly rects: readonly Rect[];
+  readonly centre: Point;
 }
 
 function distanceToRect(r: Rect, x: number, y: number): number {
@@ -11,23 +13,27 @@ function distanceToRect(r: Rect, x: number, y: number): number {
   return Math.hypot(dx, dy);
 }
 
+const distanceTo = (t: Target, x: number, y: number) => Math.min(...t.rects.map((r) => distanceToRect(r, x, y)));
+
 /**
- * Rule 2. A tap on a block's drawn rectangle is that block. A tap anywhere
- * else (a gap, an empty cell, the margin) goes to the nearest block centre
- * among blocks within reach. Reach is half a cell, and never less than what
- * makes the target 44 px across, so targets grow into free space and never
- * into a neighbour, which already owns its own rectangle.
+ * Rule 2. A tap on a block as drawn is that block. A tap anywhere else (a
+ * gap, an empty cell, the margin) goes to the nearest block centre among
+ * blocks within reach. Reach is 0.6 of a cell (past the middle of a free
+ * cell beside the block, inset included), and never less than what makes
+ * the target 44 px across, so targets grow into free space and never into a
+ * neighbour, which already owns its own cells.
  */
 export function hitTest(targets: readonly Target[], x: number, y: number, cell: number): string | null {
   for (const t of targets) {
-    if (distanceToRect(t.rect, x, y) === 0) return t.id;
+    if (distanceTo(t, x, y) === 0) return t.id;
   }
   let best: string | null = null;
   let bestDist = Infinity;
   for (const t of targets) {
-    const reach = Math.max(cell / 2, (MIN_TARGET - Math.min(t.rect.w, t.rect.h)) / 2);
-    if (distanceToRect(t.rect, x, y) > reach) continue;
-    const d = Math.hypot(t.rect.x + t.rect.w / 2 - x, t.rect.y + t.rect.h / 2 - y);
+    const narrowest = Math.min(...t.rects.map((r) => Math.min(r.w, r.h)));
+    const reach = Math.max(cell * 0.6, (MIN_TARGET - narrowest) / 2);
+    if (distanceTo(t, x, y) > reach) continue;
+    const d = Math.hypot(t.centre.x - x, t.centre.y - y);
     if (d < bestDist) {
       bestDist = d;
       best = t.id;

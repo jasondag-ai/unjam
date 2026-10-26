@@ -13,24 +13,22 @@ import {
   undo,
   validateState,
   type Block,
-  type Gate,
+  type Colour,
+  type Rails,
   type State,
 } from './index';
 
-// Helpers: straight bars and single cells, anchored at their first cell.
-const hBar = (id: string, colour: Block['colour'], row: number, col: number, len: number): Block => ({
-  id, colour, anchor: { row, col }, axis: 'h',
-  shape: Array.from({ length: len }, (_, i) => ({ row: 0, col: i })),
+const RAILS: Rails = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' };
+
+/** A piece drawn as rows of '#' and '.', anchored at its top-left. */
+const piece = (id: string, colour: Colour, row: number, col: number, rows: string[]): Block => ({
+  id,
+  colour,
+  anchor: { row, col },
+  shape: rows.flatMap((line, r) => [...line].flatMap((ch, c) => (ch === '#' ? [{ row: r, col: c }] : []))),
 });
-const vBar = (id: string, colour: Block['colour'], row: number, col: number, len: number): Block => ({
-  id, colour, anchor: { row, col }, axis: 'v',
-  shape: Array.from({ length: len }, (_, i) => ({ row: i, col: 0 })),
-});
-const dot = (id: string, colour: Block['colour'], row: number, col: number): Block => ({
-  id, colour, anchor: { row, col }, axis: 'free', shape: [{ row: 0, col: 0 }],
-});
-const board = (blocks: Block[], gates: Gate[]): State => {
-  const s = deepFreeze({ size: 5, blocks, gates, moves: 0 });
+const board = (blocks: Block[], size = 5): State => {
+  const s = deepFreeze({ size, blocks, rails: RAILS, moves: 0 });
   validateState(s);
   return s;
 };
@@ -43,128 +41,94 @@ function deepFreeze<T>(value: T): T {
 }
 
 describe('legalSlides', () => {
-  it('measures a horizontal block to the walls on an empty row', () => {
-    const s = board([hBar('A', 'cyan', 2, 1, 2)], []);
-    expect(legalSlides(s, 'A')).toEqual({ up: 0, right: 2, down: 0, left: 1 });
+  it('measures to the frame in all four directions', () => {
+    const s = board([piece('A', 'cyan', 2, 1, ['##'])]);
+    expect(legalSlides(s, 'A')).toEqual({ up: 2, right: 2, down: 2, left: 1 });
   });
 
-  it('measures a vertical block to the walls', () => {
-    const s = board([vBar('A', 'cyan', 0, 3, 3)], []);
-    expect(legalSlides(s, 'A')).toEqual({ up: 0, right: 0, down: 2, left: 0 });
+  it('stops where any cell of the shape meets a neighbour', () => {
+    // L at rows 0-1; its foot at (1,1) meets B at (1,3) after one step right.
+    const s = board([piece('A', 'cyan', 0, 0, ['#.', '##']), piece('B', 'mint', 1, 3, ['#', '#'])]);
+    expect(legalSlides(s, 'A').right).toBe(1);
   });
 
-  it('stops at the neighbouring block', () => {
-    const s = board([hBar('A', 'cyan', 0, 0, 2), vBar('B', 'amber', 0, 4, 2)], []);
-    expect(legalSlides(s, 'A').right).toBe(2);
-    const t = board([hBar('A', 'cyan', 0, 0, 2), vBar('B', 'amber', 0, 2, 2)], []);
-    expect(legalSlides(t, 'A').right).toBe(0);
-  });
-
-  it('lets a single-cell block move along both axes', () => {
-    const s = board([dot('A', 'mint', 2, 2), dot('B', 'cyan', 0, 2)], []);
-    expect(legalSlides(s, 'A')).toEqual({ up: 1, right: 2, down: 2, left: 2 });
+  it('lets an interlocked piece fit past a neighbour its shape clears', () => {
+    // T pointing down sits over a gap in B, so it can slide down one.
+    const s = board([
+      piece('A', 'amber', 0, 0, ['###', '.#.']),
+      piece('B', 'mint', 2, 0, ['#.#', '###']),
+    ]);
+    expect(legalSlides(s, 'A').down).toBe(1);
   });
 
   it('returns zeros for an unknown block', () => {
-    const s = board([], []);
-    expect(legalSlides(s, 'Z')).toEqual({ up: 0, right: 0, down: 0, left: 0 });
+    expect(legalSlides(board([]), 'Z')).toEqual({ up: 0, right: 0, down: 0, left: 0 });
   });
 });
 
 describe('canExit', () => {
-  const gate: Gate = { side: 'right', index: 1, colour: 'cyan' };
-
-  it('returns the gate when the lane is clear and colour and row match', () => {
-    const s = board([hBar('A', 'cyan', 1, 0, 2)], [gate]);
-    expect(canExit(s, 'A')).toEqual(gate);
+  it('leaves by the side its colour names when the lane is clear', () => {
+    expect(canExit(board([piece('A', 'amber', 3, 1, ['##'])]), 'A')).toBe('top');
+    expect(canExit(board([piece('A', 'cyan', 3, 1, ['##'])]), 'A')).toBe('right');
+    expect(canExit(board([piece('A', 'violet', 0, 1, ['##'])]), 'A')).toBe('bottom');
+    expect(canExit(board([piece('A', 'mint', 3, 3, ['##'])]), 'A')).toBe('left');
   });
 
   it('is null when one cell of the lane is blocked', () => {
-    const s = board([hBar('A', 'cyan', 1, 0, 2), dot('B', 'mint', 1, 4)], [gate]);
+    const s = board([piece('A', 'amber', 3, 1, ['##']), piece('B', 'cyan', 0, 2, ['##'])]);
     expect(canExit(s, 'A')).toBeNull();
   });
 
-  it('is null when the gate colour is wrong', () => {
-    const s = board([hBar('A', 'cyan', 1, 0, 2)], [{ ...gate, colour: 'amber' }]);
+  it('never leaves by a side of the wrong colour, even when that side is open', () => {
+    // Cyan piece on the top row with nothing above: top is amber, so it must go right.
+    const open = board([piece('A', 'cyan', 0, 0, ['##'])]);
+    expect(canExit(open, 'A')).toBe('right');
+    const blocked = board([piece('A', 'cyan', 0, 0, ['##']), piece('B', 'mint', 0, 4, ['#', '#'])]);
+    expect(canExit(blocked, 'A')).toBeNull();
+  });
+
+  it('checks every cell the shape passes through, not just one lane', () => {
+    // Amber L: its stem column is clear to the top, its foot column is not.
+    const s = board([piece('A', 'amber', 2, 0, ['#.', '##']), piece('B', 'mint', 0, 1, ['##'])]);
     expect(canExit(s, 'A')).toBeNull();
+    expect(canExit(board([piece('A', 'amber', 2, 0, ['#.', '##'])]), 'A')).toBe('top');
   });
 
-  it('is null when the gate is misaligned by one row', () => {
-    const above = board([hBar('A', 'cyan', 1, 0, 2)], [{ ...gate, index: 0 }]);
-    const below = board([hBar('A', 'cyan', 1, 0, 2)], [{ ...gate, index: 2 }]);
-    expect(canExit(above, 'A')).toBeNull();
-    expect(canExit(below, 'A')).toBeNull();
+  it('passes through its own cells', () => {
+    const s = board([piece('A', 'amber', 1, 2, ['#', '#', '#'])]);
+    expect(canExit(s, 'A')).toBe('top');
   });
 
-  it('only exits along the block axis', () => {
-    // Vertical block next to a matching side gate cannot leave sideways.
-    const s = board([vBar('A', 'cyan', 0, 4, 2)], [{ side: 'right', index: 0, colour: 'cyan' }]);
-    expect(canExit(s, 'A')).toBeNull();
-  });
-
-  it('exits a vertical block through the top or bottom', () => {
-    const top: Gate = { side: 'top', index: 3, colour: 'violet' };
-    const s = board([vBar('A', 'violet', 2, 3, 2)], [top]);
-    expect(canExit(s, 'A')).toEqual(top);
-  });
-
-  it('exits a single-cell block in any direction', () => {
-    const left: Gate = { side: 'left', index: 4, colour: 'mint' };
-    const s = board([dot('A', 'mint', 4, 3)], [left]);
-    expect(canExit(s, 'A')).toEqual(left);
-  });
-
-  it('ignores a matching gate on the far side when the near lane is blocked', () => {
-    const s = board(
-      [hBar('A', 'cyan', 1, 1, 2), dot('B', 'mint', 1, 4)],
-      [gate, { side: 'left', index: 1, colour: 'cyan' }],
-    );
-    expect(canExit(s, 'A')).toEqual({ side: 'left', index: 1, colour: 'cyan' });
-  });
-
-  it('needs a gate for every row a thick block occupies', () => {
-    const thick: Block = {
-      id: 'A', colour: 'amber', anchor: { row: 1, col: 0 }, axis: 'h',
-      shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }],
-    };
-    const one = board([thick], [{ side: 'right', index: 1, colour: 'amber' }]);
-    expect(canExit(one, 'A')).toBeNull();
-    const both = board([thick], [
-      { side: 'right', index: 2, colour: 'amber' },
-      { side: 'right', index: 1, colour: 'amber' },
-    ]);
-    expect(canExit(both, 'A')).toEqual({ side: 'right', index: 1, colour: 'amber' });
+  it('is null for an unknown block', () => {
+    expect(canExit(board([]), 'Z')).toBeNull();
   });
 });
 
 describe('applySlide and applyExit', () => {
-  const start = () =>
-    board(
-      [hBar('A', 'cyan', 0, 0, 2), vBar('B', 'amber', 0, 3, 2)],
-      [{ side: 'right', index: 0, colour: 'cyan' }],
-    );
+  const start = () => board([piece('A', 'cyan', 0, 0, ['##']), piece('B', 'violet', 0, 3, ['#', '#'])]);
 
-  it('slides a block and returns a new state without touching the old one', () => {
+  it('slides one cell and returns a new state without touching the old one', () => {
     const s = start();
-    const next = applySlide(s, 'B', 'down', 1);
+    const next = applySlide(s, 'B', 'down');
     expect(next).not.toBeNull();
     expect(next).not.toBe(s);
     expect(next!.blocks.find((b) => b.id === 'B')!.anchor).toEqual({ row: 1, col: 3 });
     expect(s.blocks.find((b) => b.id === 'B')!.anchor).toEqual({ row: 0, col: 3 });
   });
 
-  it('rejects slides that are too far, off axis, or zero', () => {
+  it('slides in any direction its shape fits, and no other', () => {
     const s = start();
-    expect(applySlide(s, 'B', 'down', 4)).toBeNull();
-    expect(applySlide(s, 'B', 'left', 1)).toBeNull();
-    expect(applySlide(s, 'B', 'down', 0)).toBeNull();
-    expect(applySlide(s, 'Z', 'down', 1)).toBeNull();
+    expect(applySlide(s, 'B', 'right')).not.toBeNull();
+    expect(applySlide(s, 'B', 'up')).toBeNull(); // frame
+    expect(applySlide(s, 'A', 'right')).not.toBeNull();
+    expect(applySlide(s, 'A', 'left')).toBeNull(); // frame
+    expect(applySlide(s, 'Z', 'down')).toBeNull();
   });
 
   it('opens a lane by sliding, then exits', () => {
     const s = start();
     expect(applyExit(s, 'A')).toBeNull();
-    const opened = applySlide(s, 'B', 'down', 1)!;
+    const opened = applySlide(s, 'B', 'down')!;
     const exited = applyExit(opened, 'A')!;
     expect(exited.blocks.map((b) => b.id)).toEqual(['B']);
     expect(opened.blocks).toHaveLength(2);
@@ -173,30 +137,27 @@ describe('applySlide and applyExit', () => {
 
 describe('move count', () => {
   it('counts slides and exits but not rejected taps', () => {
-    const s = board(
-      [hBar('A', 'cyan', 0, 0, 2), vBar('B', 'amber', 0, 3, 2)],
-      [{ side: 'right', index: 0, colour: 'cyan' }],
-    );
+    const s = board([piece('A', 'cyan', 0, 0, ['##']), piece('B', 'amber', 0, 3, ['#', '#']), piece('C', 'violet', 4, 3, ['##'])]);
     let h = createHistory(s);
-    h = commit(h, applyExit(current(h), 'A')); // rejected: lane blocked
+    h = commit(h, applyExit(current(h), 'A')); // rejected: B in the lane
     expect(current(h).moves).toBe(0);
-    h = commit(h, applySlide(current(h), 'B', 'down', 1));
+    h = commit(h, applySlide(current(h), 'B', 'down'));
     expect(current(h).moves).toBe(1);
     h = commit(h, applyExit(current(h), 'A'));
     expect(current(h).moves).toBe(2);
-    h = commit(h, applyExit(current(h), 'B')); // rejected: no amber gate
+    h = commit(h, applySlide(current(h), 'C', 'down')); // rejected: frame
     expect(current(h).moves).toBe(2);
     expect(h.states).toHaveLength(3);
   });
 });
 
 describe('history', () => {
-  const s = board([dot('A', 'mint', 0, 0)], [{ side: 'top', index: 0, colour: 'mint' }]);
+  const s = board([piece('A', 'mint', 0, 0, ['##'])]);
 
   it('undo returns the exact earlier state object', () => {
     const h0 = createHistory(s);
-    const h1 = commit(h0, applySlide(s, 'A', 'right', 2));
-    const h2 = commit(h1, applySlide(current(h1), 'A', 'down', 1));
+    const h1 = commit(h0, applySlide(s, 'A', 'right'));
+    const h2 = commit(h1, applySlide(current(h1), 'A', 'down'));
     const back = undo(h2);
     expect(current(back)).toBe(current(h1));
     expect(current(undo(back))).toBe(s);
@@ -212,8 +173,8 @@ describe('history', () => {
 
   it('restart goes back to the first state', () => {
     let h = createHistory(s);
-    h = commit(h, applySlide(s, 'A', 'right', 1));
-    h = commit(h, applySlide(current(h), 'A', 'right', 1));
+    h = commit(h, applySlide(s, 'A', 'right'));
+    h = commit(h, applySlide(current(h), 'A', 'right'));
     expect(current(restart(h))).toBe(s);
     expect(canUndo(restart(h))).toBe(false);
   });
@@ -221,19 +182,25 @@ describe('history', () => {
 
 describe('isSolved', () => {
   it('is false while blocks remain and true when none do', () => {
-    const s = board([dot('A', 'mint', 0, 0)], [{ side: 'top', index: 0, colour: 'mint' }]);
+    const s = board([piece('A', 'mint', 0, 0, ['##'])]);
     expect(isSolved(s)).toBe(false);
     expect(isSolved(applyExit(s, 'A')!)).toBe(true);
   });
 });
 
 describe('validateState', () => {
-  it('rejects overlapping, off-board and badly typed blocks', () => {
-    const v = (blocks: Block[], gates: Gate[] = []) => () => validateState({ size: 5, blocks, gates, moves: 0 });
-    expect(v([hBar('A', 'cyan', 0, 0, 2), dot('B', 'mint', 0, 1)])).toThrow(/overlap/);
-    expect(v([hBar('A', 'cyan', 0, 4, 2)])).toThrow(/off the board/);
-    expect(v([{ ...dot('A', 'mint', 0, 0), axis: 'h' }])).toThrow(/free/);
-    expect(v([{ ...hBar('A', 'cyan', 0, 0, 2), axis: 'free' }])).toThrow(/axis/);
-    expect(v([], [{ side: 'top', index: 5, colour: 'cyan' }])).toThrow(/off the board/);
+  const v = (blocks: Block[], rails: Rails = RAILS) => () => validateState({ size: 5, blocks, rails, moves: 0 });
+
+  it('accepts pieces of 2 to 6 cells on a 6x6 board', () => {
+    expect(() => board([piece('A', 'cyan', 0, 0, ['###', '###'])], 6)).not.toThrow();
+  });
+
+  it('rejects bad pieces and bad rails', () => {
+    expect(v([piece('A', 'cyan', 0, 0, ['#'])])).toThrow(/2 to 6/);
+    expect(v([piece('A', 'cyan', 0, 0, ['####', '###'])])).toThrow(/2 to 6/);
+    expect(v([piece('A', 'cyan', 0, 0, ['#.#'])])).toThrow(/connected/);
+    expect(v([piece('A', 'cyan', 0, 0, ['##']), piece('B', 'mint', 0, 1, ['##'])])).toThrow(/overlap/);
+    expect(v([piece('A', 'cyan', 0, 4, ['##'])])).toThrow(/off the board/);
+    expect(v([], { ...RAILS, left: 'cyan' })).toThrow(/rail/);
   });
 });

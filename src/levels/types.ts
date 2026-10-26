@@ -1,4 +1,4 @@
-import type { Colour, State } from '../engine';
+import type { Colour, Rails, State } from '../engine';
 
 export type Glyph = 'square' | 'triangle' | 'circle' | 'diamond';
 
@@ -13,6 +13,8 @@ export interface World {
   };
   /** One glyph per colour, always drawn (rule 1). */
   readonly glyphs: Readonly<Record<Colour, Glyph>>;
+  /** Which colour rail runs along each side. */
+  readonly rails: Rails;
   readonly levels: readonly Level[];
 }
 
