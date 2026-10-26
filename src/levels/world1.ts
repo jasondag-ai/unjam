@@ -1,5 +1,6 @@
 import type { Block, Colour, Rails } from '../engine';
 import type { World } from './types';
+import { generatedLevels } from './world1.generated';
 
 /** A piece drawn as rows of '#' and '.', anchored at its top-left. */
 const p = (id: string, colour: Colour, row: number, col: number, rows: string[]): Block => ({
@@ -11,10 +12,9 @@ const p = (id: string, colour: Colour, row: number, col: number, rows: string[])
 
 const rails: Rails = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' };
 
-// Level 1: 6x6, 8 pieces, 27 of 36 cells: an S, a T, two L's, a J, a
-// square, a bar of three and one domino. Built in reverse (rule 6): each
-// piece was placed so it can leave past the pieces placed before it, and
-// where it blocked the most of them. Two pieces can leave at the start.
+// Level 10 is the job 003 board, kept as Jason asked. 8 pieces, 27 of 36
+// cells: an S, a T, two L's, a J, a square, a bar of three and one domino.
+// Built in reverse (rule 6). Two pieces can leave at the start.
 //   + a a a a a a +
 //   m . A A . . . c
 //   m . B A C C D c
@@ -33,9 +33,11 @@ export const world1: World = {
   },
   glyphs: { cyan: 'square', amber: 'triangle', violet: 'circle', mint: 'diamond' },
   rails,
+  // Levels 1 to 9 come from the board search (tools/make-levels.ts).
   levels: [
+    ...generatedLevels,
     {
-      id: '1',
+      id: '10',
       start: {
         size: 6,
         moves: 0,
