@@ -5,7 +5,8 @@
 - **M1 tap to exit: done**, accepted by Jason.
 - **Job 002 real boards: done.**
 - **Job 003 piece mix: done.**
-- **Job 004 density curve: built**, waiting for Jason to play levels 1 to 10 at http://10.0.0.30:5290/.
+- **Job 004 density curve: done.**
+- **Job 005 grid grows: built**, waiting for Jason to play levels 1 to 10 at http://10.0.0.30:5290/.
 
 ## What exists
 - `src/engine/types.ts` — Cell, Block, Gate, State, Slides.
@@ -140,10 +141,38 @@ is level 1; the 5x5 teaching idea is dropped. Supersedes decisions 21 and 22.
 32. The search lives in the repo now (job 004 asks for it as parameters). It is a build-time tool,
     not run in the game.
 
+## Job 005: grid grows, pieces don't (2026-10-26)
+Jason's correction: piece size is held at 2 to 4 cells; piece count, fill and the grid rise. Early 6x6,
+middle 7x7, late 8x8. Job 003 mix applies to middle and late. Supersedes decisions 28 to 31.
+- Search: `maxDominoes` added; grid size was already `size`. A 7x7 search test added.
+- Layout: frame margin 26 -> 20 px, rail glyphs 16 -> 12 px out, so 7x7 cells are 45 px on a 390 px
+  phone (43 before). Tests pin 44+ for 6x6 and 7x7 at 390, 393 and 430 px wide.
+- Levels regenerated: grid 6,6,6,6,6,7,7,7,7,7. Pieces 5,6,6,7,7,9,9,10,10,10.
+  Fill 31,36,39,42,44,53,55,59,61,63 percent. Free 3,3,2,2,2,2,1-2,1,1,1.
+- Job 003 board moved to `src/levels/candidates.ts` (`lateCandidates`), out of the level list.
+- Tests per band follow the new table; every piece 2 to 4 cells; fill and piece count never drop;
+  grid steps up at level 6; level 10 at the top of the middle band.
+- Browser check at iPhone size: levels 1 to 10 played in order by tapping, 53 px cells on 6x6 and
+  45 px on 7x7, Next level after 1 to 9 only, no errors.
+
+## Job 005 decisions and findings
+33. Rule 2 cell sizes (CSS px), with the 20 px margin:
+    | Phone width | 6x6 | 7x7 | 8x8 |
+    | 375 (SE, mini) | 50 | 43 | 37 |
+    | 390 / 393 | 53 | 45 | 39-40 |
+    | 430 (Pro Max) | 59 | 51 | 44 |
+    7x7 misses 44 by 1 px on 375 px phones. 8x8 holds 44 only on 430 px phones.
+34. Middle band tops out near 10 pieces: with the job 003 mix, 11 pieces need at least 32 of 49
+    cells (65.3 percent). So 9 to 14 is really 9 to 10 inside 65 percent. Level 10 is 10 pieces, 63
+    percent. Same arithmetic caps the late band near 18 pieces at 80 percent.
+35. Early levels use 2 to 4 cell pieces too (no 2-3 cap); they lean small because the fill is low.
+
 ## Needs from Jason
-- Play levels 1 to 10 in order on the phone and say whether the board feels like it gets thicker.
-- Decide level 10: keep the job 003 board (75 percent, 8 bigger pieces) or replace it with a
-  generated board at the top of the middle band (about 10 pieces, 64 to 65 percent).
+- Play levels 1 to 10 on the phone; confirm the grid steps up at level 6 and the middle levels read
+  as real shapes.
+- Rule 2 at 8x8 (decision 33): 44 px cannot hold on most phones. Choose before the late band: let
+  the board use more of the screen (smaller frame margin, rail glyphs inside the rails), accept
+  about 39 px with expanded hit targets, or cap the late band at 7x7.
 
 ## Next step
 - On Jason's word: next job.

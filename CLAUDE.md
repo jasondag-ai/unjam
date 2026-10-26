@@ -5,20 +5,25 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 **Read [STANDING_RULES.md](STANDING_RULES.md) first. It overrides this file and the PRD; check every build against it.**
 
 ## The game
-- Boards are 6x6. Blocks are polyominoes of 2 to 6 cells (bars, squares, L, T, S, Z).
+- Blocks are polyominoes of 2 to 4 cells in every band (bars, squares, L, T, S, Z). Piece size is
+  not a difficulty knob; piece count, fill and the grid rise.
 - Four rails, one full-length rail per side, each a colour: top amber, left mint, right cyan,
   bottom violet. A block's colour names the side it leaves by.
 - Exit: a block travels straight toward its own side and leaves when every cell its shape passes
   through, all the way to the rail, is empty. Shape decides whether; colour decides where.
 - Sliding: a block moves one cell in any direction into space its whole shape fits.
-- The board size never changes; density is the difficulty curve (`src/levels/bands.ts`):
-  - Early: 5 to 8 pieces, 30 to 45 percent fill, mostly 2 and 3 cell pieces, clustered in the
-    middle with the outer ring mostly empty. Two or three free at start.
-  - Middle: 9 to 13 pieces, 50 to 65 percent, the L, T, S and Z mix arriving. One or two free.
-  - Late: 14 to 20 pieces, 70 to 80 percent, bigger shapes, margin gone. Zero or one free.
-- Piece-mix rules apply per band. If fill and shape mix fight, shape mix wins.
+- The curve (`src/levels/bands.ts`):
+  | Band | Grid | Pieces | Fill | Free at start |
+  | early | 6x6 | 5 to 8 | 30-45% | 2 to 3 |
+  | middle | 7x7 | 9 to 14 | 50-65% | 1 to 2 |
+  | late | 8x8 | 14 to 20 | 70-80% | 0 to 1 |
+  Early boards lean to 2 and 3 cell pieces, clustered in the middle with the outer ring mostly
+  empty. Middle and late follow the job 003 mix: at least half the pieces 3 or 4 cells, dominoes
+  at most a third, and a real L, T, S, Z mix.
+- If fill and shape mix fight, shape mix wins.
 - Levels come from the board search (`src/search/`, `npm run levels`), built in reverse (rule 6).
-  Density, piece count, piece size, clustering and free count are its parameters.
+  Grid size, density, piece count, piece size, domino cap, clustering and free count are its
+  parameters. The renderer and hit testing work at any grid size, scaled to the same area.
 
 ## Stack
 - TypeScript, Vite, Canvas. No game engine, no framework.
@@ -42,7 +47,8 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - M1 tap to exit: done.
 - Job 002 real boards: rails, polyominoes, free sliding, one packed 6x6 board. Done.
 - Job 003 piece mix: done.
-- Job 004 density curve: 10 levels, board search, level number, next-level button. Built.
+- Job 004 density curve: done.
+- Job 005 grid grows: levels 1-5 6x6, 6-10 7x7, pieces 2-4 cells. Built.
   - Portrait, board centred, 16px gutters.
   - Edge-lit vector look. Ground #060B14, faint grid behind the board.
   - Blocks: rounded rectangles, 1.5px lit border, translucent fill of the same colour, outer glow.
@@ -56,7 +62,7 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
   - Move counter in the corner. Undo button. Restart button.
   - Gate: runs with `npm run dev`, Jason clears it on his phone over the local network,
     every tap feels immediate.
-- Not built yet: drag input, worlds, stars, sound, menus, more than 10 levels.
+- Not built yet: drag input, the late band, worlds, stars, sound, menus.
 
 ## Working rules
 - One question at a time, with your recommended answer.
@@ -68,5 +74,5 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 ## Commands
 - `npm test` — engine typecheck guard, full typecheck, Vitest.
 - `npx tsx src/engine/demo.ts` (or `npm run demo`) — scripted solve in the terminal.
-- `npm run levels` — regenerate levels 1 to 9 from the curve in `tools/make-levels.ts`.
+- `npm run levels` — regenerate levels 1 to 10 from the curve in `tools/make-levels.ts`.
 - `npm run dev` — Vite dev server on the local network, fixed port 5290 (5173-5181 belong to other projects).
