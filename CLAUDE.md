@@ -11,10 +11,14 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Exit: a block travels straight toward its own side and leaves when every cell its shape passes
   through, all the way to the rail, is empty. Shape decides whether; colour decides where.
 - Sliding: a block moves one cell in any direction into space its whole shape fits.
-- Boards are dense and interlocked: 8 to 10 pieces, 60 to 75 percent of cells filled.
-- Piece mix: at least half the pieces 3 cells or more, with a genuine L, T, S or Z mix. Dominoes
-  are filler, at most a third of the pieces. If fill and shape mix fight, shape mix wins.
-- At most two pieces can leave at the start; the rule teaches itself. No 5x5 teaching levels.
+- The board size never changes; density is the difficulty curve (`src/levels/bands.ts`):
+  - Early: 5 to 8 pieces, 30 to 45 percent fill, mostly 2 and 3 cell pieces, clustered in the
+    middle with the outer ring mostly empty. Two or three free at start.
+  - Middle: 9 to 13 pieces, 50 to 65 percent, the L, T, S and Z mix arriving. One or two free.
+  - Late: 14 to 20 pieces, 70 to 80 percent, bigger shapes, margin gone. Zero or one free.
+- Piece-mix rules apply per band. If fill and shape mix fight, shape mix wins.
+- Levels come from the board search (`src/search/`, `npm run levels`), built in reverse (rule 6).
+  Density, piece count, piece size, clustering and free count are its parameters.
 
 ## Stack
 - TypeScript, Vite, Canvas. No game engine, no framework.
@@ -37,7 +41,8 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - M0 engine: `npm test` passes; `npx tsx src/engine/demo.ts` prints SOLVED. Done.
 - M1 tap to exit: done.
 - Job 002 real boards: rails, polyominoes, free sliding, one packed 6x6 board. Done.
-- Job 003 piece mix: level 1 regenerated as 8 real-shape pieces. Built.
+- Job 003 piece mix: done.
+- Job 004 density curve: 10 levels, board search, level number, next-level button. Built.
   - Portrait, board centred, 16px gutters.
   - Edge-lit vector look. Ground #060B14, faint grid behind the board.
   - Blocks: rounded rectangles, 1.5px lit border, translucent fill of the same colour, outer glow.
@@ -51,7 +56,7 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
   - Move counter in the corner. Undo button. Restart button.
   - Gate: runs with `npm run dev`, Jason clears it on his phone over the local network,
     every tap feels immediate.
-- Not built yet: drag input, generator, sound, stars, menus, more levels.
+- Not built yet: drag input, worlds, stars, sound, menus, more than 10 levels.
 
 ## Working rules
 - One question at a time, with your recommended answer.
@@ -63,4 +68,5 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 ## Commands
 - `npm test` — engine typecheck guard, full typecheck, Vitest.
 - `npx tsx src/engine/demo.ts` (or `npm run demo`) — scripted solve in the terminal.
+- `npm run levels` — regenerate levels 1 to 9 from the curve in `tools/make-levels.ts`.
 - `npm run dev` — Vite dev server on the local network, fixed port 5290 (5173-5181 belong to other projects).

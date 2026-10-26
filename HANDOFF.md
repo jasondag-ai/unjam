@@ -4,7 +4,8 @@
 - **M0 engine: done**, accepted by Jason.
 - **M1 tap to exit: done**, accepted by Jason.
 - **Job 002 real boards: done.**
-- **Job 003 piece mix: built**, waiting for Jason to clear it on his phone at http://10.0.0.30:5290/.
+- **Job 003 piece mix: done.**
+- **Job 004 density curve: built**, waiting for Jason to play levels 1 to 10 at http://10.0.0.30:5290/.
 
 ## What exists
 - `src/engine/types.ts` — Cell, Block, Gate, State, Slides.
@@ -106,8 +107,43 @@ is level 1; the 5x5 teaching idea is dropped. Supersedes decisions 21 and 22.
 27. Chose the board with the widest shape mix over one with one more pinned piece but an empty
     bottom row.
 
+## Job 004: density curve (2026-10-26)
+- `src/search/shapes.ts` — piece catalogue (domino, bars of 3 and 4, L3, L4, J4, T, S, Z, square),
+  rotations, `kindOf`, `familyOf`.
+- `src/search/search.ts` — `searchBoard(params, rails)`. Parameters: pieces, cells (density),
+  piece-size range, minimum L/T/S/Z families, free-at-start range, ring maximum (clustering),
+  tries, seed. Built in reverse; pulls pieces to the middle; keeps the most pinned board. Seeded.
+- `src/levels/bands.ts` — early, middle, late bands.
+- `tools/make-levels.ts` — the curve for levels 1 to 9; `npm run levels` writes
+  `src/levels/world1.generated.ts`. Level 10 is the job 003 board, kept in `world1.ts`.
+- Curve: pieces 5, 6, 6, 7, 7, 9, 9, 9, 10, 8. Fill 31, 36, 39, 42, 44, 53, 58, 61, 64, 75 percent.
+  Free at start 3, 3, 2, 2, 2, 2, 1-2, 1, 1, 2. Level 1 has nothing on the outer ring.
+- Tests: every level valid and tap-clearable; fill rises every level; levels 1 to 5 in the early
+  band (mostly 2-3 cell pieces, ring at most 5 of 20 cells); 6 to 9 in the middle band with at
+  least one L/T/S/Z; level 10 keeps its job 003 picture and mix tests.
+- HUD shows the level number. A Next level button appears on clear (space reserved, so the board
+  never moves); none after level 10. Progress is not saved; reload starts at level 1.
+- Browser check at iPhone size: levels 1 to 10 played in order by tapping, each cleared, Next
+  shown after 1 to 9 and not after 10, no errors.
+
+## Job 004 decisions (engineer's call)
+28. Level 10 is kept as asked, though it sits outside the middle band (8 pieces, not 9 to 13; 75
+    percent, not 50 to 65). Tests hold it to its job 003 numbers instead. Open question below.
+29. Middle band: job 003's mix (dominoes at most a third, half 3+ cells, three families) cannot fit
+    9+ pieces at 65 percent or less: 9 pieces with 3 dominoes is already 26+ cells (72 percent).
+    So middle levels are mostly dominoes with L/T/S/Z arriving (1 or 2 families). Fill was kept,
+    since raising it would cross into the late band.
+30. Early band "mostly 2 and 3 cell pieces" is held as: no piece over 3 cells in the curve; the
+    test allows a quarter larger.
+31. Pieces stop at 4 cells in the catalogue; the late band's bigger shapes need 5 and 6 cell
+    pieces added later.
+32. The search lives in the repo now (job 004 asks for it as parameters). It is a build-time tool,
+    not run in the game.
+
 ## Needs from Jason
-- Clear level 1 on the phone and confirm it reads as a mix of real shapes.
+- Play levels 1 to 10 in order on the phone and say whether the board feels like it gets thicker.
+- Decide level 10: keep the job 003 board (75 percent, 8 bigger pieces) or replace it with a
+  generated board at the top of the middle band (about 10 pieces, 64 to 65 percent).
 
 ## Next step
-- On Jason's word after the phone check: next job.
+- On Jason's word: next job.
