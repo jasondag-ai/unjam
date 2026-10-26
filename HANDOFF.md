@@ -6,7 +6,8 @@
 - **Job 002 real boards: done.**
 - **Job 003 piece mix: done.**
 - **Job 004 density curve: done.**
-- **Job 005 grid grows: built**, waiting for Jason to play levels 1 to 10 at http://10.0.0.30:5290/.
+- **Job 005 grid grows: done.**
+- **Job 009 GitHub Pages: live** at https://jasondag-ai.github.io/unjam/ (see below for the build id).
 
 ## What exists
 - `src/engine/types.ts` — Cell, Block, Gate, State, Slides.
@@ -167,12 +168,29 @@ middle 7x7, late 8x8. Job 003 mix applies to middle and late. Supersedes decisio
     percent. Same arithmetic caps the late band near 18 pieces at 80 percent.
 35. Early levels use 2 to 4 cell pieces too (no 2-3 cap); they lean small because the fill is low.
 
+## Jobs 007 to 009: test links (2026-10-26)
+- Job 007 quick tunnel: replaced by Pages and stopped. Job 008 (named tunnel, login service): dropped;
+  the PathGrant tunnel was never changed and no login service was installed.
+- Job 009: public repo jasondag-ai/unjam; Pages Source = GitHub Actions; deploy workflow on push to
+  main (npm ci, npm test, build, publish; Node 22).
+- `vite.config.ts`: base `/unjam/` for builds only (dev server and its tooling stay at `/`);
+  `__APP_VERSION__` from package.json; build id from `GITHUB_SHA` in CI, git locally; writes
+  `version.json` `{version, build}`. Footer: `v0.0.x · build abc1234`.
+- `tools/release.sh` (`npm run release`): patch bump, commit "Release x.y.z", push, check.
+  `tools/check-live.sh` (`npm run check-live`): ls-remote, raw package.json at the commit, live
+  version.json via curl with no cache; waits up to 5 minutes; lists runs if not live.
+- First deploy: 0.0.2, build 51a956b; run succeeded in 42 s; checked in a phone-sized browser over
+  the public site: playable in 0.4 s, level 1 cleared by taps.
+
+## Job 009 decisions
+36. Base path applies to builds only, so the dev server (and the then-running quick tunnel) kept
+    working at the root.
+37. Version starts at 0.0.1; each release is a patch bump. The release commit is made by the script.
+
 ## Needs from Jason
-- Play levels 1 to 10 on the phone; confirm the grid steps up at level 6 and the middle levels read
-  as real shapes.
-- Rule 2 at 8x8 (decision 33): 44 px cannot hold on most phones. Choose before the late band: let
-  the board use more of the screen (smaller frame margin, rail glyphs inside the rails), accept
-  about 39 px with expanded hit targets, or cap the late band at 7x7.
+- Open https://jasondag-ai.github.io/unjam/ on the phone over cellular and check the footer's build
+  id matches the one reported.
+- Still open from job 005: rule 2 at 8x8 (decision 33).
 
 ## Next step
 - On Jason's word: next job.

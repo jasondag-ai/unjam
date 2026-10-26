@@ -29,7 +29,18 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - TypeScript, Vite, Canvas. No game engine, no framework.
 - No dependencies beyond Vite and the test runner (Vitest). TypeScript and tsx are dev tools.
 - Node 22+ (`.nvmrc` says 22).
-- Do not create a GitHub repo or push anywhere until Jason says so.
+- Repo: github.com/jasondag-ai/unjam (public). Live: https://jasondag-ai.github.io/unjam/
+
+## Deploy (GitHub Pages)
+- Every push to main tests, builds and publishes (`.github/workflows/deploy.yml`; Pages Source is
+  GitHub Actions). Builds use base `/unjam/`; the dev server stays at the root.
+- Ship with `npm run release` only: it bumps the patch version, commits "Release x.y.z", pushes and
+  runs the live check. Every deploy bumps the version.
+- The footer shows `v<version> · build <first 7 of the commit>`; the build writes the same into
+  `version.json`.
+- Verify with `npm run check-live`: git ls-remote for main, raw package.json at that commit, and the
+  live version.json read raw with curl. Never trust a web fetch of version.json.
+- Out of scope so far: a dev lane (unjam-next), a custom domain.
 
 ## Engine rules (src/engine/)
 - Pure functions over plain data. No DOM, no canvas, no globals, no Node APIs.
@@ -48,7 +59,8 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Job 002 real boards: rails, polyominoes, free sliding, one packed 6x6 board. Done.
 - Job 003 piece mix: done.
 - Job 004 density curve: done.
-- Job 005 grid grows: levels 1-5 6x6, 6-10 7x7, pieces 2-4 cells. Built.
+- Job 005 grid grows: done.
+- Job 009 GitHub Pages: live.
   - Portrait, board centred, 16px gutters.
   - Edge-lit vector look. Ground #060B14, faint grid behind the board.
   - Blocks: rounded rectangles, 1.5px lit border, translucent fill of the same colour, outer glow.
@@ -76,3 +88,4 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - `npx tsx src/engine/demo.ts` (or `npm run demo`) — scripted solve in the terminal.
 - `npm run levels` — regenerate levels 1 to 10 from the curve in `tools/make-levels.ts`.
 - `npm run dev` — Vite dev server on the local network, fixed port 5290 (5173-5181 belong to other projects).
+- `npm run release` — deploy (see Deploy). `npm run check-live` — is it live?
