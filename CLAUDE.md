@@ -2,6 +2,8 @@
 
 Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the engineer.
 
+**Read [STANDING_RULES.md](STANDING_RULES.md) first. It overrides this file and the PRD; check every build against it.**
+
 ## The game
 - A 5x5 board holds coloured blocks. Each board edge segment is either wall or a coloured gate.
 - A block leaves by travelling in a straight line along its own axis to a gate of its colour,
