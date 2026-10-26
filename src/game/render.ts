@@ -152,7 +152,7 @@ function railGeometry(layout: Layout, side: Side): { bar: Rect; mark: Point } {
   const { board, inset } = layout;
   const t = 4;
   const gap = inset * 1.5; // keeps the corners apart so each rail reads as its own
-  const out = 16;
+  const out = 12; // glyph centre, inside FRAME_MARGIN
   const midX = board.x + board.w / 2;
   const midY = board.y + board.h / 2;
   switch (side) {

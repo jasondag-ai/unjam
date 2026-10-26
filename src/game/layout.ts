@@ -1,8 +1,11 @@
 import { cellsOf, type Block, type Cell } from '../engine';
 
 export const GUTTER = 16;
-/** Room outside the frame for the rails and their glyphs. */
-export const FRAME_MARGIN = 26;
+/**
+ * Room outside the frame for the rails and their glyphs. Kept tight so a
+ * 7x7 board still has 44 px cells on a 390 px wide phone (rule 2).
+ */
+export const FRAME_MARGIN = 20;
 export const MIN_TARGET = 44;
 
 export interface Rect {
