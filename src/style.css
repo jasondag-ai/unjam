@@ -1,0 +1,56 @@
+/* UI chrome only. Board colours come from the world (rule 8). */
+:root {
+  --text: #e6edf5;
+  --label: #8c99ab; /* 6.8:1 on the ground (rule 15) */
+  --button: #101a2b;
+  --button-edge: rgba(140, 170, 210, 0.28);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ground, #060b14);
+  color: var(--text);
+  font: 500 16px/1.2 system-ui, -apple-system, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+#board { position: fixed; inset: 0; display: block; touch-action: none; }
+#hud {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px 0;
+  pointer-events: none;
+}
+#moves { font-variant-numeric: tabular-nums; }
+.actions { display: flex; gap: 8px; }
+.actions button {
+  pointer-events: auto;
+  touch-action: manipulation;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--button-edge);
+  background: var(--button);
+  color: var(--text);
+  font: inherit;
+}
+.actions button:disabled { color: var(--label); }
+#build {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  padding: 0 16px calc(env(safe-area-inset-bottom) + 10px);
+  text-align: center;
+  font-size: 12px;
+  color: var(--label);
+  pointer-events: none;
+}

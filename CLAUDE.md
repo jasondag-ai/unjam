@@ -29,7 +29,7 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 
 ## Milestones
 - M0 engine: `npm test` passes; `npx tsx src/engine/demo.ts` prints SOLVED. Done.
-- M1 tap to exit: canvas renderer and tap input. Start only when Jason says go.
+- M1 tap to exit: canvas renderer and tap input. Built; waiting for Jason's phone check.
   - Portrait, board centred, 16px gutters.
   - Edge-lit vector look. Ground #060B14, faint grid behind the board.
   - Blocks: rounded rectangles, 1.5px lit border, translucent fill of the same colour, outer glow.
@@ -56,4 +56,4 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 ## Commands
 - `npm test` — engine typecheck guard, full typecheck, Vitest.
 - `npx tsx src/engine/demo.ts` (or `npm run demo`) — scripted solve in the terminal.
-- `npm run dev` — Vite dev server, exposed on the local network.
+- `npm run dev` — Vite dev server on the local network, fixed port 5290 (5173-5181 belong to other projects).

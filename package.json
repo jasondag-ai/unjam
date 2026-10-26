@@ -7,7 +7,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "vite --host",
+    "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "test": "tsc --noEmit -p tsconfig.engine.json && tsc --noEmit && vitest run",
     "demo": "tsx src/engine/demo.ts"

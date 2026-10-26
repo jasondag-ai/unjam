@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#060B14" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="icon" href="data:," />
+    <title>Unjam</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="board" aria-label="Unjam board"></canvas>
+    <header id="hud">
+      <div id="moves" aria-live="polite">Moves 0</div>
+      <div class="actions">
+        <button id="undo" type="button" disabled>Undo</button>
+        <button id="restart" type="button" disabled>Restart</button>
+      </div>
+    </header>
+    <footer id="build"></footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
