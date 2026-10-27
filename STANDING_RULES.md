@@ -4,14 +4,20 @@ moment the CEO says something once. Every build and asset
 is checked against all of them.
 1. Colour is never the only signal. Every block carries its
    own glyph mark, always on, never a setting.
-2. Minimum touch target 44 CSS px, expanded away from
-   neighbours. A tap between two blocks resolves to the
-   nearer block centre.
+2. Minimum touch target 44 CSS px per piece, not per cell:
+   a piece's target spans at least 44 px along its longest
+   side, expanded away from neighbours. Cells may be as
+   small as 28 px on a 375 px phone, so a single-cell piece
+   is allowed only where a cell is 44 px or larger. A tap
+   between two blocks resolves to the nearer block centre.
 3. The engine stays pure. No DOM, canvas, browser globals
    or timers in src/engine/.
 4. State is immutable. Moves return a new board. Undo is a
    list of past boards.
-5. No fail state. Past par costs stars, never the level. No
+5. Three strikes (job 010, reversing "no fail state" on
+   purpose). A tap on a piece whose lane is not clear costs
+   a strike; three strikes restart the level. Correct taps
+   are free and uncounted. No move counter, par or stars. No
    lives, energy, timers, ads or accounts.
 6. Every level solvable by construction. Generated in
    reverse, never hand-authored past M1.
