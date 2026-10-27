@@ -11,7 +11,8 @@
 - **Job 010 match the reference: done.**
 - **Job 011 late band and deadlock: done.**
 - **Job 012 mix the colours: done.**
-- **Job 013 tweaks: built and released** (see the job 013 section).
+- **Job 013 tweaks: done.**
+- **Job 014 shaped late band: built and released** (see the job 014 section).
 
 ## What exists
 - `src/engine/types.ts` — Cell, Block, Gate, State, Slides.
@@ -294,10 +295,32 @@ decides solvability and what a hint points at). Mostly dominoes at reference den
 - Sound effects, music, win screens, challenge rounds.
 - Before a public release: hide or gate the level picker.
 
+## Job 014: shaped late band (2026-10-27)
+Jason: "like that" (Tap Block Out screenshot: big L's nested in each other, staircases, small
+pieces making bigger blocks), then "let's try and see how it looks" to the proposal.
+- Engine: pieces up to 7 cells; `Block.group` names pieces placed together as one shape.
+- Shapes: big corner L's `V5`, `L6`, `J6`, `L7`; groups `nest2` (5+3), `nest2big` (7+5),
+  `nest3` (7+5+3), `stair3` (three dominoes); `placementOrder` gives the reverse tap order for an
+  exit side, or null if the pieces would not hold each other.
+- Search `groups` param: each group is one unit in one colour, placed in its own reverse order with
+  clear paths. Colour mixing moves a group's colour as a whole (trading with a same-size group or
+  as many single pieces), only to colours whose path runs through the group. Boards with no groups
+  come out exactly as before (levels 1-10 unchanged).
+- Late band now 24-30 pieces at 85-90 percent: levels 11-15 are 24/85, 26/86, 28/87, 28/88, 30/89,
+  each with nest3, nest2big, nest2 and stair3. Spread 0.90+, same-colour neighbours 22-27 percent
+  (random 22-23), buried 16-28, chains 8-18.
+- Supersedes decision 48 and the job 013 level 15 setting (40 pieces); the 32-40 late numbers are
+  replaced.
+
+## Job 014 decisions and findings
+50. Six groups on a board, or two three-deep nests, found no board with colours mixed; every late
+    level uses the same four groups.
+51. Staircases of dominoes, not single cells: rule 2 forbids single cells at 33 px.
+52. Piece count drops from 26 (level 10) to 24 (level 11): the late band uses fewer, bigger pieces.
+    The never-drops test now applies inside each band.
+
 ## Needs from Jason
-- "Stack / combination of blocks forming shapes" on advanced levels: pieces that are themselves L,
-  T, S, Z shapes, or boards whose pieces together form a picture (picture-shaped boards)?
-- Level 15 at 40 pieces / 88 percent: keep it, or go back to 39 / 91?
+- Play levels 11 to 15 on the phone: does the late band now look like the reference?
 
 ## Next step
 - On Jason's word: next job.

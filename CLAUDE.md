@@ -17,14 +17,17 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
   | Band | Grid (wide x tall) | Pieces | Fill |
   | early | 6x7 | 6 to 10 | 35-50% |
   | middle | 8x9 | 18 to 26 | 65-80% |
-  | late | 9x11 | 32 to 40 | 85-95% |
+  | late | 9x11 | 24 to 30 | 85-90% | (job 014: fewer, bigger, shaped pieces) |
 - Every colour gets 20 to 30 percent of each board's pieces.
 - Pieces are mostly 2 and 3 cells, with some 4 and 5 cell bars and L shapes. Single cells only
   where a cell is 44 px or more (early boards).
 - Early boards keep 2 to 3 free pieces at the start and cluster in the middle. Middle and late
   boards have no free-at-start target (4 to 8 on middle boards is accepted, job 011); the search
   takes the board with the smallest empty patch. Do not build a stronger search for free counts.
-- Late band: levels 11 to 15, mostly dominoes at reference density.
+- Late band (job 014): levels 11 to 15 shaped like the reference. Pieces up to 7 cells. Each
+  board places four shape groups as units, in one colour each: a nest of three L's (7, 5, 3
+  cells), a nest of two big L's (7, 5), a nest of two small L's (5, 3) and a domino staircase.
+  One piece of a group holds the next. No single cells (late cells are 33 px).
 - Colours are mixed on levels 6 to 15 (job 012): colour must not follow position. Measures in
   `src/search/measures.ts`: spread ratio per colour (own-rail distance against the board's, at
   least 0.9), same-colour neighbours (within 5 points of a random deal), and dependency depth
@@ -72,7 +75,8 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Job 010 match the reference: portrait boards, new curve, colour balance, strikes, cancel gesture.
 - Job 011: late band (levels 11-15), deadlock message, rule 7 reworded.
 - Job 012: colours mixed on levels 6-15; spread, clumping and depth measures.
-- Job 013: sky blue, level picker (testing only; gate before public release), level 15 at 40 pieces.
+- Job 013: sky blue, level picker (testing only; gate before public release).
+- Job 014: late band shaped like the reference (nests of L's, staircases, big L's).
 - The look (M1, final): ground #060B14, faint grid behind the board; blocks are rounded shapes with
   a 1.5px lit border, translucent fill of the same colour and an outer glow; sky blue #40B4FF (job 013, brighter so it parts from mint; still `cyan` in code), amber
   #F2A93B, violet #7D6CF5, mint #5BE8A8; rails are glowing bars; every block carries its colour's
