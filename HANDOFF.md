@@ -7,7 +7,8 @@
 - **Job 003 piece mix: done.**
 - **Job 004 density curve: done.**
 - **Job 005 grid grows: done.**
-- **Job 009 GitHub Pages: live** at https://jasondag-ai.github.io/unjam/ (see below for the build id).
+- **Job 009 GitHub Pages: live** at https://jasondag-ai.github.io/unjam/.
+- **Job 010 match the reference: built and released** (version and build id in the job 010 section).
 
 ## What exists
 - `src/engine/types.ts` — Cell, Block, Gate, State, Slides.
@@ -187,10 +188,44 @@ middle 7x7, late 8x8. Job 003 mix applies to middle and late. Supersedes decisio
     working at the root.
 37. Version starts at 0.0.1; each release is a patch bump. The release commit is made by the script.
 
+## Job 010: match the reference (2026-10-26)
+- STANDING_RULES: rule 2 now per piece (44 px along its longest side; 28 px cell floor on a 375 px
+  phone; single cells only where a cell is 44 px+). Rule 5 is three strikes (reverses "no fail
+  state" on purpose). Rule 19 added: the cancel gesture.
+- Engine: `rows`/`cols` replace `size`; single-cell pieces valid; `moves` dropped;
+  `strikes.ts` (startAttempt, tap, undoAttempt, restartAttempt; MAX_STRIKES 3).
+- Game: HUD shows `Strikes ✕ ○ ○`, then "3 strikes: level restarted" for 1.6 s. Undo keeps
+  strikes; restart clears them. A tap commits on lift only on the piece it started on
+  (`tapOnRelease`); the 12 px slop is gone.
+- Search: rows/cols; size weights with a 60 percent "2 or 3 cells" floor; fixed colour quota;
+  any remaining kind each step; always blocks the most free pieces, then touch and centre pull
+  (`centrePull`); ranks boards by smallest empty patch, then fewest free, then most pinned. Fast
+  placement on a taken-cell set (about 15 ms per 8x9 try).
+- Catalogue: single cell `M`, 5-cell `I5`, `L5`, `J5` added. Curve kinds: dominoes, bars and L's
+  (T, S, Z, O stay in the catalogue, unused).
+- Levels: 1-5 6x7, pieces 8,8,8,10,10, fill 36,40,43,45,50 percent, free 3,3,2,2,2.
+  6-10 8x9, pieces 18,20,22,24,26, fill 65,69,74,76,79 percent, free 5,4,8,6,8.
+- Browser check (iPhone size): all 10 cleared by taps; 53 px cells on 6x7, 39 px on 8x9; three
+  bad taps restart; sliding off a blocked or free piece cancels with no strike; no errors.
+
+## Job 010 decisions
+38. Colour share 20-30 percent has no whole-number answer for 6, 7, 9 or 11 pieces, so early levels
+    use 8 and 10 pieces.
+39. Item 4's mix replaces the job 003 mix in every band (that mix cannot fit 18-26 pieces at 80
+    percent). 4 and 5 cell pieces are bars and L's only, as item 4 lists.
+40. At 26 pieces in 57 cells the average is 2.2 cells: level 10 is 23 dominoes. It is what the
+    numbers force; fewer pieces at that fill would give more shapes.
+41. Free at start: job 010's table dropped it. Early keeps 2-3. 1-2 on middle boards is out of
+    reach for this search (typical 5-8 at 22-26 pieces), so middle boards have no target.
+42. Middle boards rank by smallest empty patch first so they look crowded all over.
+43. "3 strikes: level restarted" shows for 1.6 s after the third strike, so the reset is not a
+    surprise. Text only; no art change.
+
 ## Needs from Jason
-- Open https://jasondag-ai.github.io/unjam/ on the phone over cellular and check the footer's build
-  id matches the one reported.
-- Still open from job 005: rule 2 at 8x8 (decision 33).
+- Open the live link, play a middle level (6 to 10), try three bad taps and a slide-off.
+- Free at start on middle boards (decision 41): accept 4 to 8, or ask for a stronger search to
+  hold 1 to 2.
+- Rule 7 still says par comes from the solver; job 010 dropped par. Keep it for later or remove?
 
 ## Next step
 - On Jason's word: next job.

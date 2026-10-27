@@ -5,25 +5,28 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 **Read [STANDING_RULES.md](STANDING_RULES.md) first. It overrides this file and the PRD; check every build against it.**
 
 ## The game
-- Blocks are polyominoes of 2 to 4 cells in every band (bars, squares, L, T, S, Z). Piece size is
-  not a difficulty knob; piece count, fill and the grid rise.
 - Four rails, one full-length rail per side, each a colour: top amber, left mint, right cyan,
   bottom violet. A block's colour names the side it leaves by.
 - Exit: a block travels straight toward its own side and leaves when every cell its shape passes
   through, all the way to the rail, is empty. Shape decides whether; colour decides where.
-- Sliding: a block moves one cell in any direction into space its whole shape fits.
-- The curve (`src/levels/bands.ts`):
-  | Band | Grid | Pieces | Fill | Free at start |
-  | early | 6x6 | 5 to 8 | 30-45% | 2 to 3 |
-  | middle | 7x7 | 9 to 14 | 50-65% | 1 to 2 |
-  | late | 8x8 | 14 to 20 | 70-80% | 0 to 1 |
-  Early boards lean to 2 and 3 cell pieces, clustered in the middle with the outer ring mostly
-  empty. Middle and late follow the job 003 mix: at least half the pieces 3 or 4 cells, dominoes
-  at most a third, and a real L, T, S, Z mix.
-- If fill and shape mix fight, shape mix wins.
+- Sliding (engine only, no input yet): a block moves one cell in any direction its shape fits.
+- Tap: commits on lift, on the piece it started on; sliding off cancels at no cost (rule 19).
+  A tap on a piece whose lane is not clear is a strike; three strikes restart the level (rule 5).
+  Correct taps are free. No move counter, par or stars.
+- Boards are portrait. The curve (`src/levels/bands.ts`, job 010):
+  | Band | Grid (wide x tall) | Pieces | Fill |
+  | early | 6x7 | 6 to 10 | 35-50% |
+  | middle | 8x9 | 18 to 26 | 65-80% |
+  | late | 9x11 | 32 to 40 | 85-95% |
+- Every colour gets 20 to 30 percent of each board's pieces.
+- Pieces are mostly 2 and 3 cells, with some 4 and 5 cell bars and L shapes. Single cells only
+  where a cell is 44 px or more (early boards).
+- Early boards keep 2 to 3 free pieces at the start and cluster in the middle. Middle and late
+  boards have no free-at-start target; the search takes the board with the smallest empty patch.
 - Levels come from the board search (`src/search/`, `npm run levels`), built in reverse (rule 6).
-  Grid size, density, piece count, piece size, domino cap, clustering and free count are its
-  parameters. The renderer and hit testing work at any grid size, scaled to the same area.
+  Grid, piece count, fill, kinds and size weights, colour share, free range, clustering and
+  centre pull are its parameters. Renderer and hit testing work at any grid, scaled to fit.
+- The edge-lit neon look is final (job 010). Do not change the art.
 
 ## Stack
 - TypeScript, Vite, Canvas. No game engine, no framework.
@@ -48,33 +51,21 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
   so any browser or Node API in the engine fails the tests.
 - Moves return a NEW state, or `null` when rejected. Never mutate.
 - Undo is the list of states (`history.ts`), never inverse moves.
-- The move count lives on the state. Slides and exits add 1; rejected moves add nothing.
 - `isSolved` is true when no blocks remain.
+- Strikes live in `strikes.ts` (an attempt is the history plus strikes). Undo never takes back a
+  strike; restart clears them.
 - Rendering and input live outside `src/engine/` and only call the engine.
-- Slides move one cell and add 1 to the move count.
 
 ## Milestones
-- M0 engine: `npm test` passes; `npx tsx src/engine/demo.ts` prints SOLVED. Done.
-- M1 tap to exit: done.
-- Job 002 real boards: rails, polyominoes, free sliding, one packed 6x6 board. Done.
-- Job 003 piece mix: done.
-- Job 004 density curve: done.
-- Job 005 grid grows: done.
+- M0 engine, M1 tap to exit, jobs 002 to 005 (rails, piece mix, density curve, grid): done.
 - Job 009 GitHub Pages: live.
-  - Portrait, board centred, 16px gutters.
-  - Edge-lit vector look. Ground #060B14, faint grid behind the board.
-  - Blocks: rounded rectangles, 1.5px lit border, translucent fill of the same colour, outer glow.
-  - Colours: cyan #4CD6E6, amber #F2A93B, violet #7D6CF5, mint #5BE8A8.
-  - Rails are glowing bars along each side of the frame.
-  - Every block carries a distinct glyph (square, triangle, circle, diamond). Always on.
-  - Hit areas at least 44 CSS px, expanded away from neighbours; a tap between two blocks goes
-    to the nearer block centre.
-  - Tap: if `canExit`, animate out of its gate in under 300ms and accept input at once.
-    Otherwise shake 4px.
-  - Move counter in the corner. Undo button. Restart button.
-  - Gate: runs with `npm run dev`, Jason clears it on his phone over the local network,
-    every tap feels immediate.
-- Not built yet: drag input, the late band, worlds, stars, sound, menus.
+- Job 010 match the reference: portrait boards, new curve, colour balance, strikes, cancel gesture.
+- The look (M1, final): ground #060B14, faint grid behind the board; blocks are rounded shapes with
+  a 1.5px lit border, translucent fill of the same colour and an outer glow; cyan #4CD6E6, amber
+  #F2A93B, violet #7D6CF5, mint #5BE8A8; rails are glowing bars; every block carries its colour's
+  glyph (square, triangle, circle, diamond), always on; exits under 300 ms, a blocked tap shakes 4 px.
+- Not built yet: drag input (keep rule 19; flag the conflict and ask), the late band, worlds,
+  sound, menus.
 
 ## Working rules
 - One question at a time, with your recommended answer.
