@@ -9,7 +9,8 @@
 - **Job 005 grid grows: done.**
 - **Job 009 GitHub Pages: live** at https://jasondag-ai.github.io/unjam/.
 - **Job 010 match the reference: done.**
-- **Job 011 late band and deadlock: built and released** (see the job 011 section).
+- **Job 011 late band and deadlock: done.**
+- **Job 012 mix the colours: built and released** (see the job 012 section).
 
 ## What exists
 - `src/engine/types.ts` — Cell, Block, Gate, State, Slides.
@@ -246,9 +247,40 @@ decides solvability and what a hint points at). Mostly dominoes at reference den
 46. Colours on dense boards drift toward their own rail (amber top, violet bottom, mint left, cyan
     right), because each piece is placed where its lane to its rail is clear. Not changed.
 
+## Job 012: mix the colours (2026-10-27)
+- `src/search/measures.ts`: `colourSpread` (each colour's average distance to its own rail over
+  every piece's average to that rail; 1 = no link to position), `clumping` (touching same-colour
+  pairs against a random deal), `dependency` (pieces before the most-buried can go, and longest
+  blocking chain), `blockers`, `railDistance`. Unit tests.
+- Search `colourMix` (target spread, 0 = off): positions from the reverse build as before;
+  colours dealt out again at random, then repaired by colour swaps: first until the board clears
+  by taps with every colour at the target, then to cut same-colour clumps to a random deal plus 5
+  points. Lanes, distances and touching pairs are worked out once, so it is fast.
+- Placement-time scoring (reward distance from own rail) was tried first and dropped: it made most
+  builds fail and over-pushed the top and bottom colours on tall boards.
+- Levels 6-15 regenerated with `colourMix: 0.9`; levels 1-5 unchanged. Level 15 is 39 pieces (was
+  40). Tests: spread 0.9+ and clumping within 5 points on levels 6-15; depth 3+ on 11-15.
+
+  | Level | Spread a / c / v / m | Buried | Chain | Same-colour neighbours (random) |
+  | 11 | 0.92 / 1.05 / 0.91 / 0.95 | 28 | 11 | 27% (23%) |
+  | 12 | 0.92 / 0.92 / 0.96 / 0.97 | 30 | 19 | 27% (23%) |
+  | 13 | 0.91 / 0.94 / 0.91 / 0.91 | 33 | 13 | 28% (23%) |
+  | 14 | 0.93 / 1.11 / 0.91 / 1.12 | 35 | 20 | 27% (23%) |
+  | 15 | 0.94 / 0.91 / 1.00 / 0.93 | 37 | 16 | 28% (23%) |
+  Before job 012, levels 11-15 had spread ratios 0.27 to 0.78 and clumping 36-41 percent.
+
+## Job 012 decisions and findings
+47. Spread target 0.9 for every colour ("near the board average"); clumping within 5 points of
+    random. Levels 1-5 keep their drift (ratios 0.40 to 1.27), as allowed.
+48. Ceiling with mixing on 9x11: 91 percent (90 cells) at 38-39 pieces; 40 pieces top out at 88
+    percent (87 cells). Level 15 is 39 pieces in 90 cells so fill still rises every level.
+49. Depth was already there before mixing (levels 11-15 buried 13-30), but the deepest pieces sat
+    near their own rail. Now burial is 28-37 with colours mixed.
+
 ## Needs from Jason
-- Play level 15 on the phone: does it read like the reference?
-- Decision 46: colour drift toward each rail on dense boards. Leave it, or mix colours more?
+- Play level 15 on the phone: do the colours read as scattered like the reference?
+- Decision 48: 40 pieces with mixed colours top out at 88 percent. Keep level 15 at 39 pieces
+  and 91 percent, or prefer 40 pieces at 88 percent (fill would dip from level 14)?
 
 ## Next step
 - On Jason's word: next job.

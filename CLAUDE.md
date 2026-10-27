@@ -24,8 +24,12 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Early boards keep 2 to 3 free pieces at the start and cluster in the middle. Middle and late
   boards have no free-at-start target (4 to 8 on middle boards is accepted, job 011); the search
   takes the board with the smallest empty patch. Do not build a stronger search for free counts.
-- Late band: levels 11 to 15, mostly dominoes at reference density. The search reaches about 91
-  percent at 40 pieces; 92 percent and up finds no board.
+- Late band: levels 11 to 15, mostly dominoes at reference density.
+- Colours are mixed on levels 6 to 15 (job 012): colour must not follow position. Measures in
+  `src/search/measures.ts`: spread ratio per colour (own-rail distance against the board's, at
+  least 0.9), same-colour neighbours (within 5 points of a random deal), and dependency depth
+  (pieces before the most-buried can go; at least 3 on late boards). With mixing on, 9x11 reaches
+  91 percent at 38-39 pieces and 88 percent at 40. Never loosen the mix to reach density.
 - Deadlock: when pieces remain and none can leave, the status says "Stuck: no piece can leave" and
   the footer button offers Restart; taps there cost no strike. Exits alone can never cause it
   (they only empty cells); it guards for drag input.
@@ -67,6 +71,7 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Job 009 GitHub Pages: live.
 - Job 010 match the reference: portrait boards, new curve, colour balance, strikes, cancel gesture.
 - Job 011: late band (levels 11-15), deadlock message, rule 7 reworded.
+- Job 012: colours mixed on levels 6-15; spread, clumping and depth measures.
 - The look (M1, final): ground #060B14, faint grid behind the board; blocks are rounded shapes with
   a 1.5px lit border, translucent fill of the same colour and an outer glow; cyan #4CD6E6, amber
   #F2A93B, violet #7D6CF5, mint #5BE8A8; rails are glowing bars; every block carries its colour's
