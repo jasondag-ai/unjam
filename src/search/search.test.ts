@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { canExit, cellsOf, validateState, type Rails } from '../engine';
+import { colourSpread } from './measures';
 import { colourQuota, makeRandom, searchBoard, tapSolution, type SearchParams } from './search';
 import { familyOf, kindOf, SHAPES } from './shapes';
 
@@ -16,6 +17,7 @@ const params: SearchParams = {
   free: [2, 3],
   ringMax: 3,
   centrePull: 1,
+  colourMix: 0,
   tries: 60,
   seed: 7,
 };
@@ -94,6 +96,16 @@ describe('searchBoard', () => {
     );
     expect(big).not.toBeNull();
     expect(tapSolution(big!.state)).toHaveLength(20);
+  });
+
+  it('mixes colours on request, and the board still clears by taps', () => {
+    const mixed = searchBoard(
+      { ...params, rows: 9, cols: 8, pieces: 20, cells: 50, kinds: ['D', 'I3', 'L3', 'I4', 'L4', 'I5'], sizeWeights: { 2: 5, 3: 4, 4: 1, 5: 0.5 }, free: [1, 20], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 20 },
+      RAILS,
+    );
+    expect(mixed).not.toBeNull();
+    for (const c of colourSpread(mixed!.state)) expect(c.ratio, c.colour).toBeGreaterThanOrEqual(0.9);
+    expect(tapSolution(mixed!.state)).toHaveLength(20);
   });
 
   it('gives up cleanly when the numbers cannot fit', () => {

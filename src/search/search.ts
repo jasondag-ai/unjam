@@ -1,4 +1,5 @@
-import { applyExit, canExit, cellsOf, isSolved, type Block, type Cell, type Colour, type Rails, type State } from '../engine';
+import { applyExit, canExit, cellsOf, isSolved, type Block, type Cell, type Colour, type Rails, type Side, type State } from '../engine';
+import { railDistance } from './measures';
 import { SHAPES, SIZE, type Kind } from './shapes';
 
 /** Everything that sets how hard a generated board is. */
@@ -24,6 +25,11 @@ export interface SearchParams {
   readonly ringMax: number;
   /** How hard pieces are pulled toward the middle, against blocking free pieces (1 = early boards). */
   readonly centrePull: number;
+  /**
+   * Colour mixing (job 012): every colour's spread ratio (own-rail distance
+   * against the board's, see measures.ts) must reach this. 0 is off.
+   */
+  readonly colourMix: number;
   readonly tries: number;
   readonly seed: number;
 }
@@ -74,7 +80,8 @@ export function searchBoard(params: SearchParams, rails: Rails): SearchResult | 
   for (let t = 0; t < params.tries; t++) {
     const kinds = pickKinds(params, rand);
     if (!kinds) continue;
-    const state = build(params, rails, kinds, colourQuota(params, rand)!, rand);
+    const built = build(params, rails, kinds, colourQuota(params, rand)!, rand);
+    const state = built && params.colourMix > 0 ? mixColours(built, params.colourMix, rand) : built;
     if (!state || !meets(params, state)) continue;
     const pinned = state.blocks.filter((b) => blockerCount(state, b) >= 2).length;
     const rank = [largestGap(state), freeCount(state), -pinned];
@@ -207,6 +214,95 @@ function build(p: SearchParams, rails: Rails, kinds: readonly Kind[], quota: Map
     used.set(pick.block.colour, (used.get(pick.block.colour) ?? 0) + 1);
   }
   return { rows: p.rows, cols: p.cols, rails, blocks: placed };
+}
+
+/**
+ * Job 012: deal the board's colours out again at random, so colour says
+ * nothing about position, then repair. A repair swaps the colours of a stuck
+ * piece and another piece (shares stay the same) and is kept only if fewer
+ * pieces are stuck and every colour still reaches the spread target. Null if
+ * the board cannot be made to clear by taps that way.
+ *
+ * Positions never change here, so each piece's blockers toward each rail and
+ * its distance to each rail are worked out once.
+ */
+function mixColours(s: State, target: number, rand: () => number): State | null {
+  const sides = (Object.keys(s.rails) as Side[]);
+  const sideOf = new Map(sides.map((side) => [s.rails[side], side] as const));
+  const n = s.blocks.length;
+  const index = new Map(s.blocks.map((b, i) => [b.id, i] as const));
+  const owner = new Map<number, number>();
+  s.blocks.forEach((b, i) => cellsOf(b).forEach((c) => owner.set(key(c.row, c.col), i)));
+  // lanes[i][side]: pieces between piece i and that rail. dist[i][side]: rows or columns to that rail.
+  const lanes = s.blocks.map((b, i) =>
+    Object.fromEntries(sides.map((side) => {
+      const d = STEP[side];
+      const ids = new Set<number>();
+      for (const c of cellsOf(b)) {
+        for (let r = c.row + d.row, k = c.col + d.col; r >= 0 && r < s.rows && k >= 0 && k < s.cols; r += d.row, k += d.col) {
+          const o = owner.get(key(r, k));
+          if (o !== undefined && o !== i) ids.add(o);
+        }
+      }
+      return [side, [...ids]];
+    })) as Record<Side, number[]>,
+  );
+  const dist = s.blocks.map((b) => Object.fromEntries(sides.map((side) => [side, railDistance(cellsOf(b), side, s.rows, s.cols)])) as Record<Side, number>);
+
+  /** Pieces that taps can never clear, for this colouring (removal in dependency order). */
+  const stuck = (colours: readonly Colour[]): number[] => {
+    const waiting = colours.map((c, i) => lanes[i]![sideOf.get(c)!].length);
+    const freedBy: number[][] = Array.from({ length: n }, () => []);
+    colours.forEach((c, i) => lanes[i]![sideOf.get(c)!].forEach((j) => freedBy[j]!.push(i)));
+    const queue = waiting.flatMap((w, i) => (w === 0 ? [i] : []));
+    const gone = new Array<boolean>(n).fill(false);
+    while (queue.length > 0) {
+      const i = queue.pop()!;
+      gone[i] = true;
+      for (const j of freedBy[i]!) if (--waiting[j]! === 0) queue.push(j);
+    }
+    return gone.flatMap((g, i) => (g ? [] : [i]));
+  };
+  /** The worst colour's spread ratio (see measures.ts colourSpread). */
+  const spread = (colours: readonly Colour[]): number => {
+    let worst = Infinity;
+    for (const [colour, side] of sideOf) {
+      let own = 0, mine = 0, all = 0;
+      colours.forEach((c, i) => {
+        all += dist[i]![side];
+        if (c === colour) { own += dist[i]![side]; mine++; }
+      });
+      worst = Math.min(worst, all === 0 ? 1 : own / mine / (all / n));
+    }
+    return worst;
+  };
+
+  const colours = s.blocks.map((b) => b.colour);
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [colours[i], colours[j]] = [colours[j]!, colours[i]!];
+  }
+  let stuckNow = stuck(colours);
+  let spreadNow = spread(colours);
+  for (let step = 0; step < 20000 && (stuckNow.length > 0 || spreadNow < target); step++) {
+    const a = stuckNow.length > 0 ? stuckNow[Math.floor(rand() * stuckNow.length)]! : Math.floor(rand() * n);
+    const b = Math.floor(rand() * n);
+    if (colours[a] === colours[b]) continue;
+    [colours[a], colours[b]] = [colours[b]!, colours[a]!];
+    const nextStuck = stuck(colours);
+    const nextSpread = spread(colours);
+    const better =
+      (nextStuck.length < stuckNow.length && nextSpread >= target) ||
+      (nextStuck.length === stuckNow.length && nextSpread > spreadNow);
+    if (better) {
+      stuckNow = nextStuck;
+      spreadNow = nextSpread;
+    } else {
+      [colours[a], colours[b]] = [colours[b]!, colours[a]!];
+    }
+  }
+  if (stuckNow.length > 0 || spreadNow < target) return null;
+  return { ...s, blocks: s.blocks.map((b) => ({ ...b, colour: colours[index.get(b.id)!]! })) };
 }
 
 const freeCount = (s: State) => s.blocks.filter((b) => canExit(s, b.id)).length;
