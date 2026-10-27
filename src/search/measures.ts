@@ -98,3 +98,31 @@ export function dependency(s: State): Dependency {
     chain: Math.max(0, ...depth.values()),
   };
 }
+
+export interface Clumping {
+  /** Share of touching pairs of pieces that are the same colour. */
+  readonly share: number;
+  /** What a random deal of this board's colours would give. */
+  readonly random: number;
+}
+
+/** Job 012: do colours clump? Compare touching same-colour pairs with a random deal. */
+export function clumping(s: State): Clumping {
+  const owner = new Map<string, Block>();
+  for (const b of s.blocks) for (const c of cellsOf(b)) owner.set(`${c.row},${c.col}`, b);
+  const pairs = new Map<string, boolean>();
+  for (const b of s.blocks) {
+    for (const c of cellsOf(b)) {
+      for (const o of [owner.get(`${c.row},${c.col + 1}`), owner.get(`${c.row + 1},${c.col}`)]) {
+        if (o && o !== b) pairs.set([b.id, o.id].sort().join(' '), o.colour === b.colour);
+      }
+    }
+  }
+  const n = s.blocks.length;
+  const counts = [...new Set(s.blocks.map((b) => b.colour))].map((c) => s.blocks.filter((b) => b.colour === c).length);
+  const same = [...pairs.values()].filter(Boolean).length;
+  return {
+    share: pairs.size === 0 ? 0 : same / pairs.size,
+    random: counts.reduce((t, k) => t + k * (k - 1), 0) / (n * (n - 1)),
+  };
+}

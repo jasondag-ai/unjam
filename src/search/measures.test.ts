@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { State } from '../engine';
-import { blockers, colourSpread, dependency, railDistance } from './measures';
+import { blockers, clumping, colourSpread, dependency, railDistance } from './measures';
 
 const rails = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
 const bar = (id: string, colour: 'amber' | 'cyan' | 'violet' | 'mint', row: number, col: number) => ({
@@ -50,5 +50,15 @@ describe('colourSpread', () => {
     // Swap colours across rows: amber now sits as far from the top as anything on the board.
     const swapped: State = { ...hugging, blocks: hugging.blocks.map((b) => ({ ...b, colour: b.colour === 'amber' ? 'violet' : 'amber' })) };
     expect(colourSpread(swapped).find((c) => c.colour === 'amber')!.ratio).toBe(2);
+  });
+});
+
+describe('clumping', () => {
+  it('compares touching same-colour pairs with a random deal', () => {
+    // Two amber side by side, two violet side by side, the rows touching.
+    const s: State = { rows: 4, cols: 4, rails, blocks: [bar('A', 'amber', 0, 0), bar('B', 'amber', 0, 2), bar('C', 'violet', 1, 0), bar('D', 'violet', 1, 2)] };
+    const c = clumping(s);
+    expect(c.share).toBe(2 / 4); // A-B and C-D of the four touching pairs
+    expect(c.random).toBeCloseTo(4 / 12);
   });
 });
