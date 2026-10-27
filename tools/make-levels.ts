@@ -1,4 +1,4 @@
-// Generates world 1 levels 1 to 10 from the curve below and prints them as a
+// Generates world 1 levels 1 to 15 from the curve below and prints them as a
 // TypeScript module. Run: npm run levels
 // Same seeds, same boards.
 import { boardToText } from '../src/engine';
@@ -7,10 +7,10 @@ import { searchBoard, type SearchParams } from '../src/search/search';
 
 const RAILS = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
 
-type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'tries'> & { readonly band: 'early' | 'middle' };
+type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'tries'> & { readonly band: 'early' | 'middle' | 'late' };
 
-// Rising steadily: 6x7 for levels 1 to 5, 8x9 from level 6. Fill 36% -> 79%,
-// pieces 8 -> 26. Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give
+// Rising steadily: 6x7 for levels 1 to 5, 8x9 for 6 to 10, 9x11 for 11 to 15.
+// Fill 36% -> 91%, pieces 8 -> 40. Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give
 // every colour 20 to 30 percent. Middle levels take the fewest free pieces
 // the search finds (it prefers fewest).
 const CURVE: readonly Plan[] = [
@@ -24,6 +24,13 @@ const CURVE: readonly Plan[] = [
   { band: 'middle', pieces: 22, cells: 53, free: [1, 26], ringMax: 30, centrePull: 0.2, tries: 800 },
   { band: 'middle', pieces: 24, cells: 55, free: [1, 26], ringMax: 30, centrePull: 0.2, tries: 800 },
   { band: 'middle', pieces: 26, cells: 57, free: [1, 26], ringMax: 30, centrePull: 0.2, tries: 800 },
+  // Late, 9x11: reference density, mostly dominoes. The search reaches about 91 percent fill
+  // at 40 pieces (92 percent and up finds no board), so the curve stops there.
+  { band: 'late', pieces: 32, cells: 85, free: [1, 40], ringMax: 36, centrePull: 0.2, tries: 300 },
+  { band: 'late', pieces: 34, cells: 86, free: [1, 40], ringMax: 36, centrePull: 0.2, tries: 300 },
+  { band: 'late', pieces: 36, cells: 88, free: [1, 40], ringMax: 36, centrePull: 0.2, tries: 300 },
+  { band: 'late', pieces: 38, cells: 89, free: [1, 40], ringMax: 36, centrePull: 0.2, tries: 300 },
+  { band: 'late', pieces: 40, cells: 90, free: [1, 40], ringMax: 36, centrePull: 0.2, tries: 300 },
 ];
 
 const out: string[] = [

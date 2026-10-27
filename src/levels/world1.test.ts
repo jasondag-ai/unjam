@@ -25,8 +25,8 @@ function inBand(s: State, band: Band): void {
 }
 
 describe('world1', () => {
-  it('has 10 levels, numbered 1 to 10', () => {
-    expect(levels.map((l) => l.id)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']);
+  it('has 15 levels, numbered 1 to 15', () => {
+    expect(levels.map((l) => l.id)).toEqual(Array.from({ length: 15 }, (_, i) => String(i + 1)));
   });
 
   it('every colour has a distinct glyph', () => {
@@ -83,9 +83,9 @@ describe('the curve', () => {
     }
   });
 
-  it('is 6 wide by 7 tall for levels 1 to 5, 8 by 9 for 6 to 10', () => {
+  it('is 6 wide by 7 tall for levels 1 to 5, 8 by 9 for 6 to 10, 9 by 11 for 11 to 15', () => {
     expect(levels.map((l) => `${l.start.cols}x${l.start.rows}`)).toEqual([
-      '6x7', '6x7', '6x7', '6x7', '6x7', '8x9', '8x9', '8x9', '8x9', '8x9',
+      ...Array(5).fill('6x7'), ...Array(5).fill('8x9'), ...Array(5).fill('9x11'),
     ]);
   });
 
@@ -113,9 +113,26 @@ describe.each(levels.slice(5, 10).map((l) => [l.id, l.start] as const))('middle 
   });
 });
 
+describe.each(levels.slice(10, 15).map((l) => [l.id, l.start] as const))('late band: level %s', (_, s) => {
+  it('sits in the late band', () => inBand(s, BANDS.late));
+
+  it('is mostly dominoes, at reference density', () => {
+    expect(s.blocks.filter((b) => b.shape.length === 2).length).toBeGreaterThan(s.blocks.length / 2);
+    expect(s.blocks.every((b) => b.shape.length >= 2)).toBe(true);
+  });
+});
+
+describe('the late band ends at reference density', () => {
+  it('level 15 is 40 pieces at 90 percent or more', () => {
+    const s = levels[14]!.start;
+    expect(s.blocks).toHaveLength(40);
+    expect(fill(s)).toBeGreaterThanOrEqual(0.9);
+  });
+});
+
 describe('middle band as a whole', () => {
   it('has some 4 and 5 cell pieces', () => {
-    const big = levels.slice(5).flatMap((l) => l.start.blocks).filter((b) => b.shape.length >= 4);
+    const big = levels.slice(5, 10).flatMap((l) => l.start.blocks).filter((b) => b.shape.length >= 4);
     expect(big.length).toBeGreaterThanOrEqual(3);
   });
 });

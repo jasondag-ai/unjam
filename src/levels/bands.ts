@@ -37,7 +37,8 @@ export const BANDS: Readonly<Record<Band['name'], Band>> = {
     kinds: BARS_AND_LS, sizeWeights: { 2: 5, 3: 4, 4: 1.2, 5: 0.6 },
   },
   late: {
+    // Reference density: mostly dominoes, as the arithmetic says (about 2.1 to 2.7 cells a piece).
     name: 'late', cols: 9, rows: 11, pieces: [32, 40], fill: [0.85, 0.95],
-    kinds: BARS_AND_LS, sizeWeights: { 2: 5, 3: 4, 4: 1.2, 5: 0.6 },
+    kinds: BARS_AND_LS, sizeWeights: { 2: 6, 3: 3, 4: 1, 5: 0.4 },
   },
 };
