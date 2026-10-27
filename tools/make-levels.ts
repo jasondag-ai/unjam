@@ -10,7 +10,7 @@ const RAILS = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as
 type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'tries'> & { readonly colourMix?: number } & { readonly band: 'early' | 'middle' | 'late' };
 
 // Rising steadily: 6x7 for levels 1 to 5, 8x9 for 6 to 10, 9x11 for 11 to 15.
-// Fill 36% -> 91%, pieces 8 -> 39. Levels 6 to 15 mix colours (job 012). Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give
+// Fill 36% -> 90% (level 14), pieces 8 -> 40. Levels 6 to 15 mix colours (job 012). Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give
 // every colour 20 to 30 percent. Middle levels take the fewest free pieces
 // the search finds (it prefers fewest).
 const CURVE: readonly Plan[] = [
@@ -26,12 +26,13 @@ const CURVE: readonly Plan[] = [
   { band: 'middle', pieces: 26, cells: 57, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
   // Late, 9x11: reference density, mostly dominoes, colours mixed (job 012). With every colour's
   // spread at 0.9 or more, the search reaches 91 percent at 38-39 pieces; 40 pieces top out
-  // at 88 percent (87 cells), so the curve ends at 39 pieces in 90 cells.
+  // at 88 percent (87 cells). Level 15 tries the smaller-piece setting (Jason, job 013): 40
+  // pieces in 87 cells, a dip in fill from level 14.
   { band: 'late', pieces: 32, cells: 85, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
   { band: 'late', pieces: 34, cells: 86, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
   { band: 'late', pieces: 36, cells: 88, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
   { band: 'late', pieces: 38, cells: 89, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
-  { band: 'late', pieces: 39, cells: 90, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
+  { band: 'late', pieces: 40, cells: 87, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
 ];
 
 const out: string[] = [

@@ -72,8 +72,8 @@ describe('world1', () => {
 });
 
 describe('the curve', () => {
-  it('gets thicker every level', () => {
-    for (let i = 1; i < levels.length; i++) {
+  it('gets thicker every level up to 14 (15 trades fill for smaller pieces, job 013)', () => {
+    for (let i = 1; i < 14; i++) {
       expect(fill(levels[i]!.start)).toBeGreaterThan(fill(levels[i - 1]!.start));
     }
   });
@@ -124,10 +124,10 @@ describe.each(levels.slice(10, 15).map((l) => [l.id, l.start] as const))('late b
 });
 
 describe('the late band ends at reference density', () => {
-  it('level 15 is 39 pieces at 90 percent or more (40 pieces top out at 88 percent with colours mixed)', () => {
+  it('level 15 is 40 pieces at 87 percent or more: the most pieces mixed colours allow', () => {
     const s = levels[14]!.start;
-    expect(s.blocks).toHaveLength(39);
-    expect(fill(s)).toBeGreaterThanOrEqual(0.9);
+    expect(s.blocks).toHaveLength(40);
+    expect(fill(s)).toBeGreaterThanOrEqual(0.87);
   });
 });
 
