@@ -18,6 +18,8 @@ export interface Band {
   readonly free?: readonly [number, number];
   /** Mostly 2 and 3 cells, some 4 and 5 cell bars and L's; single cells only where a cell is 44 px or more. */
   readonly kinds: readonly Kind[];
+  /** At least this share of pieces are 2 or 3 cells. */
+  readonly smallShare: number;
   readonly sizeWeights: Readonly<Partial<Record<number, number>>>;
 }
 
@@ -30,15 +32,16 @@ export const BANDS: Readonly<Record<Band['name'], Band>> = {
   // Clustered in the middle, outer ring mostly empty. Cells are 44 px or more, so single cells are allowed.
   early: {
     name: 'early', cols: 6, rows: 7, pieces: [6, 10], fill: [0.35, 0.5], free: [2, 3],
-    kinds: ['M', ...BARS_AND_LS], sizeWeights: { 1: 1.5, 2: 4, 3: 3, 4: 1, 5: 0.4 },
+    kinds: ['M', ...BARS_AND_LS], sizeWeights: { 1: 1.5, 2: 4, 3: 3, 4: 1, 5: 0.4 }, smallShare: 0.6,
   },
   middle: {
     name: 'middle', cols: 8, rows: 9, pieces: [18, 26], fill: [0.65, 0.8],
-    kinds: BARS_AND_LS, sizeWeights: { 2: 5, 3: 4, 4: 1.2, 5: 0.6 },
+    kinds: BARS_AND_LS, sizeWeights: { 2: 5, 3: 4, 4: 1.2, 5: 0.6 }, smallShare: 0.6,
   },
   late: {
-    // Reference density: mostly dominoes, as the arithmetic says (about 2.1 to 2.7 cells a piece).
-    name: 'late', cols: 9, rows: 11, pieces: [32, 40], fill: [0.85, 0.95],
-    kinds: BARS_AND_LS, sizeWeights: { 2: 6, 3: 3, 4: 1, 5: 0.4 },
+    // Shaped like the reference (job 014): fewer, bigger pieces, with shape groups (nests of L's
+    // up to 7 cells, staircases) placed by the level plan. No single cells: late cells are 33 px.
+    name: 'late', cols: 9, rows: 11, pieces: [24, 30], fill: [0.85, 0.9],
+    kinds: [...BARS_AND_LS, 'V5'], sizeWeights: { 2: 5, 3: 4, 4: 1.2, 5: 0.8 }, smallShare: 0.5,
   },
 };

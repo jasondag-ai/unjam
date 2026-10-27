@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyExit, boardToText, canExit, cellsOf, isSolved, isStuck, validateState, type Block, type State } from '../engine';
 import { computeLayout } from '../game/layout';
-import { clumping, colourSpread, dependency } from '../search/measures';
+import { blockers, clumping, colourSpread, dependency } from '../search/measures';
 import { makeRandom, tapSolution } from '../search/search';
 import { BANDS, COLOUR_SHARE, type Band } from './bands';
 import { lateCandidates } from './candidates';
@@ -22,7 +22,7 @@ function inBand(s: State, band: Band): void {
   expect(within(s.blocks.length, band.pieces), `${s.blocks.length} pieces`).toBe(true);
   expect(within(fill(s), band.fill), `fill ${fill(s).toFixed(2)}`).toBe(true);
   if (band.free) expect(within(free(s), band.free), `${free(s)} free`).toBe(true);
-  expect(small(s), 'mostly 2 and 3 cell pieces').toBeGreaterThanOrEqual(0.6 * s.blocks.length);
+  expect(small(s), '2 and 3 cell pieces').toBeGreaterThanOrEqual(band.smallShare * s.blocks.length);
 }
 
 describe('world1', () => {
@@ -48,8 +48,8 @@ describe('world1', () => {
       }
     });
 
-    it('holds every piece to 1 to 5 cells', () => {
-      for (const b of s.blocks) expect(within(b.shape.length, [1, 5])).toBe(true);
+    it('holds every piece to 1 to 7 cells', () => {
+      for (const b of s.blocks) expect(within(b.shape.length, [1, 7])).toBe(true);
     });
 
     it('clears by taps alone, one tap per piece', () => {
@@ -72,14 +72,15 @@ describe('world1', () => {
 });
 
 describe('the curve', () => {
-  it('gets thicker every level up to 14 (15 trades fill for smaller pieces, job 013)', () => {
-    for (let i = 1; i < 14; i++) {
+  it('gets thicker every level', () => {
+    for (let i = 1; i < levels.length; i++) {
       expect(fill(levels[i]!.start)).toBeGreaterThan(fill(levels[i - 1]!.start));
     }
   });
 
-  it('never drops a piece from one level to the next', () => {
+  it('never drops a piece from one level to the next inside a band (late boards use fewer, bigger pieces)', () => {
     for (let i = 1; i < levels.length; i++) {
+      if (i === 5 || i === 10) continue;
       expect(levels[i]!.start.blocks.length).toBeGreaterThanOrEqual(levels[i - 1]!.start.blocks.length);
     }
   });
@@ -117,17 +118,33 @@ describe.each(levels.slice(5, 10).map((l) => [l.id, l.start] as const))('middle 
 describe.each(levels.slice(10, 15).map((l) => [l.id, l.start] as const))('late band: level %s', (_, s) => {
   it('sits in the late band', () => inBand(s, BANDS.late));
 
-  it('is mostly dominoes, at reference density', () => {
-    expect(s.blocks.filter((b) => b.shape.length === 2).length).toBeGreaterThan(s.blocks.length / 2);
+  it('is shaped like the reference: a nest of three L\'s, a staircase, big L\'s, no single cells', () => {
+    const groups = new Map<string, Block[]>();
+    for (const b of s.blocks) if (b.group) groups.set(b.group, [...(groups.get(b.group) ?? []), b]);
+    expect(groups.size).toBeGreaterThanOrEqual(4);
+    expect([...groups.values()].some((g) => g.length === 3 && g.some((b) => b.shape.length === 7))).toBe(true);
+    expect([...groups.values()].some((g) => g.every((b) => b.shape.length === 2))).toBe(true);
+    expect(s.blocks.filter((b) => b.shape.length >= 6).length).toBeGreaterThanOrEqual(2);
     expect(s.blocks.every((b) => b.shape.length >= 2)).toBe(true);
+  });
+
+  it('keeps each shape group one colour, its pieces touching, and one holding another', () => {
+    const lanes = blockers(s);
+    const groups = new Map<string, Block[]>();
+    for (const b of s.blocks) if (b.group) groups.set(b.group, [...(groups.get(b.group) ?? []), b]);
+    for (const [name, g] of groups) {
+      expect(new Set(g.map((b) => b.colour)).size, name).toBe(1);
+      const ids = new Set(g.map((b) => b.id));
+      expect(g.some((b) => [...lanes.get(b.id)!].some((x) => ids.has(x))), `${name} pieces depend on each other`).toBe(true);
+    }
   });
 });
 
 describe('the late band ends at reference density', () => {
-  it('level 15 is 40 pieces at 87 percent or more: the most pieces mixed colours allow', () => {
+  it('level 15 is 30 pieces at 90 percent', () => {
     const s = levels[14]!.start;
-    expect(s.blocks).toHaveLength(40);
-    expect(fill(s)).toBeGreaterThanOrEqual(0.87);
+    expect(s.blocks).toHaveLength(30);
+    expect(fill(s)).toBeGreaterThanOrEqual(0.89);
   });
 });
 

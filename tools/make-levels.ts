@@ -4,13 +4,14 @@
 import { boardToText } from '../src/engine';
 import { BANDS, COLOUR_SHARE } from '../src/levels/bands';
 import { searchBoard, type SearchParams } from '../src/search/search';
+import type { MotifName } from '../src/search/shapes';
 
 const RAILS = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
 
-type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'tries'> & { readonly colourMix?: number } & { readonly band: 'early' | 'middle' | 'late' };
+type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'tries'> & { readonly colourMix?: number; readonly groups?: readonly MotifName[] } & { readonly band: 'early' | 'middle' | 'late' };
 
 // Rising steadily: 6x7 for levels 1 to 5, 8x9 for 6 to 10, 9x11 for 11 to 15.
-// Fill 36% -> 90% (level 14), pieces 8 -> 40. Levels 6 to 15 mix colours (job 012). Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give
+// Fill 36% -> 90%; pieces 8 -> 26, then 24 -> 30 bigger, shaped pieces on 9x11. Levels 6 to 15 mix colours (job 012). Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give
 // every colour 20 to 30 percent. Middle levels take the fewest free pieces
 // the search finds (it prefers fewest).
 const CURVE: readonly Plan[] = [
@@ -24,15 +25,15 @@ const CURVE: readonly Plan[] = [
   { band: 'middle', pieces: 22, cells: 53, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
   { band: 'middle', pieces: 24, cells: 55, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
   { band: 'middle', pieces: 26, cells: 57, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
-  // Late, 9x11: reference density, mostly dominoes, colours mixed (job 012). With every colour's
-  // spread at 0.9 or more, the search reaches 91 percent at 38-39 pieces; 40 pieces top out
-  // at 88 percent (87 cells). Level 15 tries the smaller-piece setting (Jason, job 013): 40
-  // pieces in 87 cells, a dip in fill from level 14.
-  { band: 'late', pieces: 32, cells: 85, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
-  { band: 'late', pieces: 34, cells: 86, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
-  { band: 'late', pieces: 36, cells: 88, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
-  { band: 'late', pieces: 38, cells: 89, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
-  { band: 'late', pieces: 40, cells: 87, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
+  // Late, 9x11, shaped like the reference (job 014): 24-30 pieces at 86-90 percent, each with a
+  // nest of three L's (7, 5 and 3 cells), a nest of two big L's (7 and 5), a nest of two small
+  // L's (5 and 3) and a staircase of dominoes, colours mixed. Six groups on a board, or two
+  // nests of three, found no mixed board.
+  { band: 'late', pieces: 24, cells: 85, free: [1, 30], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 800, groups: ['nest3', 'nest2big', 'nest2', 'stair3'] },
+  { band: 'late', pieces: 26, cells: 86, free: [1, 30], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 800, groups: ['nest3', 'nest2big', 'nest2', 'stair3'] },
+  { band: 'late', pieces: 28, cells: 87, free: [1, 30], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 800, groups: ['nest3', 'nest2big', 'nest2', 'stair3'] },
+  { band: 'late', pieces: 28, cells: 88, free: [1, 30], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 800, groups: ['nest3', 'nest2big', 'nest2', 'stair3'] },
+  { band: 'late', pieces: 30, cells: 89, free: [1, 30], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 800, groups: ['nest3', 'nest2big', 'nest2', 'stair3'] },
 ];
 
 const out: string[] = [
@@ -47,11 +48,12 @@ CURVE.forEach((plan, i) => {
   const params: SearchParams = {
     ...rest,
     colourMix: plan.colourMix ?? 0,
+    groups: plan.groups ?? [],
     rows: band.rows,
     cols: band.cols,
     kinds: band.kinds,
     sizeWeights: band.sizeWeights,
-    smallShare: 0.6,
+    smallShare: band.smallShare,
     colourShare: COLOUR_SHARE,
     seed: 1000 + i,
   };
@@ -66,7 +68,8 @@ CURVE.forEach((plan, i) => {
   out.push(`      blocks: [`);
   for (const b of s.blocks) {
     const shape = b.shape.map((c) => `{ row: ${c.row}, col: ${c.col} }`).join(', ');
-    out.push(`        { id: '${b.id}', colour: '${b.colour}', anchor: { row: ${b.anchor.row}, col: ${b.anchor.col} }, shape: [${shape}] },`);
+    const group = b.group ? `, group: '${b.group}'` : '';
+    out.push(`        { id: '${b.id}', colour: '${b.colour}'${group}, anchor: { row: ${b.anchor.row}, col: ${b.anchor.col} }, shape: [${shape}] },`);
   }
   out.push(`      ],`, `    },`, `  },`);
 });
