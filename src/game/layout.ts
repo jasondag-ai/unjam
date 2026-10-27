@@ -29,20 +29,30 @@ export interface Layout {
 
 /**
  * Portrait layout: board centred in the viewport, 16 px gutters, kept clear
- * of the HUD bands above (`top`) and below (`bottom`).
+ * of the HUD bands above (`top`) and below (`bottom`). Cells are square; the
+ * board takes the largest cell that fits both ways.
  */
-export function computeLayout(width: number, height: number, dpr: number, size: number, top: number, bottom: number): Layout {
-  const outerMax = Math.min(width - 2 * GUTTER, height - top - bottom - 2 * GUTTER);
-  const cell = Math.floor((outerMax - 2 * FRAME_MARGIN) / size);
-  const side = cell * size;
+export function computeLayout(
+  width: number,
+  height: number,
+  dpr: number,
+  rows: number,
+  cols: number,
+  top: number,
+  bottom: number,
+): Layout {
+  const room = 2 * GUTTER + 2 * FRAME_MARGIN;
+  const cell = Math.floor(Math.min((width - room) / cols, (height - top - bottom - room) / rows));
+  const w = cell * cols;
+  const h = cell * rows;
   const minY = top + GUTTER + FRAME_MARGIN;
-  const maxY = height - bottom - GUTTER - FRAME_MARGIN - side;
-  const y = Math.min(Math.max((height - side) / 2, minY), Math.max(minY, maxY));
+  const maxY = height - bottom - GUTTER - FRAME_MARGIN - h;
+  const y = Math.min(Math.max((height - h) / 2, minY), Math.max(minY, maxY));
   return {
     width,
     height,
     dpr,
-    board: { x: Math.round((width - side) / 2), y: Math.round(y), w: side, h: side },
+    board: { x: Math.round((width - w) / 2), y: Math.round(y), w, h },
     cell,
     inset: Math.max(2, Math.round(cell * 0.07)),
   };

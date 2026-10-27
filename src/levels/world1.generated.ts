@@ -14,7 +14,8 @@ export const generatedLevels: readonly Level[] = [
   {
     id: '1',
     start: {
-      size: 6,
+      rows: 6,
+      cols: 6,
       moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
@@ -38,7 +39,8 @@ export const generatedLevels: readonly Level[] = [
   {
     id: '2',
     start: {
-      size: 6,
+      rows: 6,
+      cols: 6,
       moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
@@ -63,7 +65,8 @@ export const generatedLevels: readonly Level[] = [
   {
     id: '3',
     start: {
-      size: 6,
+      rows: 6,
+      cols: 6,
       moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
@@ -88,7 +91,8 @@ export const generatedLevels: readonly Level[] = [
   {
     id: '4',
     start: {
-      size: 6,
+      rows: 6,
+      cols: 6,
       moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
@@ -114,7 +118,8 @@ export const generatedLevels: readonly Level[] = [
   {
     id: '5',
     start: {
-      size: 6,
+      rows: 6,
+      cols: 6,
       moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
@@ -141,7 +146,8 @@ export const generatedLevels: readonly Level[] = [
   {
     id: '6',
     start: {
-      size: 7,
+      rows: 7,
+      cols: 7,
       moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
@@ -170,7 +176,8 @@ export const generatedLevels: readonly Level[] = [
   {
     id: '7',
     start: {
-      size: 7,
+      rows: 7,
+      cols: 7,
       moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
@@ -199,7 +206,8 @@ export const generatedLevels: readonly Level[] = [
   {
     id: '8',
     start: {
-      size: 7,
+      rows: 7,
+      cols: 7,
       moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
@@ -229,7 +237,8 @@ export const generatedLevels: readonly Level[] = [
   {
     id: '9',
     start: {
-      size: 7,
+      rows: 7,
+      cols: 7,
       moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
@@ -259,7 +268,8 @@ export const generatedLevels: readonly Level[] = [
   {
     id: '10',
     start: {
-      size: 7,
+      rows: 7,
+      cols: 7,
       moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [

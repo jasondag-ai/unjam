@@ -15,7 +15,8 @@ import {
 
 // Rails: top amber, right cyan, bottom violet, left mint.
 const start: State = {
-  size: 5,
+  rows: 5,
+  cols: 5,
   moves: 0,
   rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
   blocks: [

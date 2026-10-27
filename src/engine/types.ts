@@ -28,8 +28,9 @@ export interface Block {
 export type Rails = Readonly<Record<Side, Colour>>;
 
 export interface State {
-  /** Board is size x size: 5 for levels 1 to 5, 6 after. */
-  readonly size: number;
+  /** Board is rows tall by cols wide. Boards are portrait: rows >= cols. */
+  readonly rows: number;
+  readonly cols: number;
   readonly blocks: readonly Block[];
   readonly rails: Rails;
   readonly moves: number;

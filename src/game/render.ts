@@ -114,16 +114,18 @@ export class Renderer {
 
     // Faint grid behind the board.
     const { board, cell } = layout;
-    const n = Math.round(board.w / cell);
+    const cols = Math.round(board.w / cell);
+    const rows = Math.round(board.h / cell);
     g.strokeStyle = palette.grid;
     g.lineWidth = 1;
     g.beginPath();
-    for (let i = 1; i < n; i++) {
-      const p = i * cell + 0.5;
-      g.moveTo(board.x + p, board.y);
-      g.lineTo(board.x + p, board.y + board.h);
-      g.moveTo(board.x, board.y + p);
-      g.lineTo(board.x + board.w, board.y + p);
+    for (let i = 1; i < cols; i++) {
+      g.moveTo(board.x + i * cell + 0.5, board.y);
+      g.lineTo(board.x + i * cell + 0.5, board.y + board.h);
+    }
+    for (let i = 1; i < rows; i++) {
+      g.moveTo(board.x, board.y + i * cell + 0.5);
+      g.lineTo(board.x + board.w, board.y + i * cell + 0.5);
     }
     g.stroke();
 

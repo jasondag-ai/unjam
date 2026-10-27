@@ -27,8 +27,8 @@ const piece = (id: string, colour: Colour, row: number, col: number, rows: strin
   anchor: { row, col },
   shape: rows.flatMap((line, r) => [...line].flatMap((ch, c) => (ch === '#' ? [{ row: r, col: c }] : []))),
 });
-const board = (blocks: Block[], size = 5): State => {
-  const s = deepFreeze({ size, blocks, rails: RAILS, moves: 0 });
+const board = (blocks: Block[], rows = 5, cols = rows): State => {
+  const s = deepFreeze({ rows, cols, blocks, rails: RAILS, moves: 0 });
   validateState(s);
   return s;
 };
@@ -59,6 +59,11 @@ describe('legalSlides', () => {
       piece('B', 'mint', 2, 0, ['#.#', '###']),
     ]);
     expect(legalSlides(s, 'A').down).toBe(1);
+  });
+
+  it('measures to the frame on a portrait board, taller than wide', () => {
+    const s = board([piece('A', 'cyan', 0, 0, ['##'])], 7, 4);
+    expect(legalSlides(s, 'A')).toEqual({ up: 0, right: 2, down: 6, left: 0 });
   });
 
   it('returns zeros for an unknown block', () => {
@@ -189,7 +194,7 @@ describe('isSolved', () => {
 });
 
 describe('validateState', () => {
-  const v = (blocks: Block[], rails: Rails = RAILS) => () => validateState({ size: 5, blocks, rails, moves: 0 });
+  const v = (blocks: Block[], rails: Rails = RAILS) => () => validateState({ rows: 5, cols: 5, blocks, rails, moves: 0 });
 
   it('accepts pieces of 2 to 6 cells on a 6x6 board', () => {
     expect(() => board([piece('A', 'cyan', 0, 0, ['###', '###'])], 6)).not.toThrow();

@@ -5,7 +5,7 @@ import { familyOf, kindOf, SHAPES } from './shapes';
 
 const RAILS: Rails = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' };
 const params: SearchParams = {
-  size: 6, pieces: 6, cells: 14, pieceSize: [2, 3], minFamilies: 1, maxDominoes: 6, free: [2, 3], ringMax: 2, tries: 60, seed: 7,
+  rows: 6, cols: 6, pieces: 6, cells: 14, pieceSize: [2, 3], minFamilies: 1, maxDominoes: 6, free: [2, 3], ringMax: 2, tries: 60, seed: 7,
 };
 
 describe('shape catalogue', () => {
@@ -51,10 +51,10 @@ describe('searchBoard', () => {
   });
 
   it('works on a larger grid with a domino cap', () => {
-    const big = searchBoard({ ...params, size: 7, pieces: 9, cells: 26, pieceSize: [2, 4], minFamilies: 3, maxDominoes: 3, free: [1, 2], ringMax: 24 }, RAILS);
+    const big = searchBoard({ ...params, rows: 7, cols: 7, pieces: 9, cells: 26, pieceSize: [2, 4], minFamilies: 3, maxDominoes: 3, free: [1, 2], ringMax: 24 }, RAILS);
     expect(big).not.toBeNull();
     const s = big!.state;
-    expect(s.size).toBe(7);
+    expect([s.rows, s.cols]).toEqual([7, 7]);
     expect(s.blocks.filter((b) => b.shape.length === 2).length).toBeLessThanOrEqual(3);
     expect(new Set(s.blocks.map((b) => familyOf(b.shape)).filter(Boolean)).size).toBeGreaterThanOrEqual(3);
     expect(tapSolution(s)).toHaveLength(9);

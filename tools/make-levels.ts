@@ -35,7 +35,8 @@ CURVE.forEach((plan, i) => {
   const band = BANDS[plan.band];
   const params: SearchParams = {
     ...plan,
-    size: band.grid,
+    rows: band.grid,
+    cols: band.grid,
     pieceSize: PIECE_SIZE,
     minFamilies: band.mix ? 3 : 0,
     maxDominoes: band.mix ? Math.floor(plan.pieces / 3) : plan.pieces,
@@ -46,9 +47,9 @@ CURVE.forEach((plan, i) => {
   if (!result) throw new Error(`No board for level ${i + 1}`);
   const s = result.state;
   const filled = s.blocks.reduce((n, b) => n + b.shape.length, 0);
-  out.push(`  // Level ${i + 1} (${band.name}, ${s.size}x${s.size}): ${s.blocks.length} pieces, ${filled} of ${s.size * s.size} cells, ${result.pinned} pinned.`);
+  out.push(`  // Level ${i + 1} (${band.name}, ${s.cols}x${s.rows}): ${s.blocks.length} pieces, ${filled} of ${s.cols * s.rows} cells, ${result.pinned} pinned.`);
   for (const line of boardToText(s).split('\n')) out.push(`  //   ${line}`);
-  out.push(`  {`, `    id: '${i + 1}',`, `    start: {`, `      size: ${s.size},`, `      moves: 0,`);
+  out.push(`  {`, `    id: '${i + 1}',`, `    start: {`, `      rows: ${s.rows},`, `      cols: ${s.cols},`, `      moves: 0,`);
   out.push(`      rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },`);
   out.push(`      blocks: [`);
   for (const b of s.blocks) {

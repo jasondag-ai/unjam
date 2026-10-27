@@ -36,7 +36,7 @@ describe('hitTest', () => {
   });
 
   it('a tap in the empty corner of an L goes to the nearer centre', () => {
-    const layout = computeLayout(400, 400, 1, 6, 0, 0);
+    const layout = computeLayout(400, 400, 1, 6, 6, 0, 0);
     const L: Block = { id: 'L', colour: 'cyan', anchor: { row: 0, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }] };
     const N: Block = { id: 'N', colour: 'mint', anchor: { row: 0, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] };
     const targets = [L, N].map((b) => ({ id: b.id, rects: blockCellRects(layout, b), centre: blockCentre(layout, b) }));
@@ -50,7 +50,7 @@ describe('hitTest', () => {
 });
 
 describe('blockOutline', () => {
-  const layout = computeLayout(400, 400, 1, 6, 0, 0);
+  const layout = computeLayout(400, 400, 1, 6, 6, 0, 0);
   const { board, cell, inset } = layout;
 
   it('traces an L clockwise with its inner corner inset too', () => {
@@ -74,7 +74,7 @@ describe('blockOutline', () => {
 
 describe('rule 2 on real phones', () => {
   // HUD bands as on the page: header about 68 px, footer about 100 px.
-  const cell = (w: number, h: number, n: number) => computeLayout(w, h, 3, n, 68, 100).cell;
+  const cell = (w: number, h: number, n: number) => computeLayout(w, h, 3, n, n, 68, 100).cell;
 
   it('keeps 6x6 and 7x7 cells at 44 px or more on a 390 px wide phone and up', () => {
     for (const [w, h] of [[390, 844], [393, 852], [430, 932]] as const) {

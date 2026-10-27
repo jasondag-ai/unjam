@@ -29,7 +29,8 @@ export const lateCandidates: readonly Level[] = [
   {
     id: 'job-003',
     start: {
-      size: 6,
+      rows: 6,
+      cols: 6,
       moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [

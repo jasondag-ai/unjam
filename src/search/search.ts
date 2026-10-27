@@ -3,8 +3,9 @@ import { FAMILY_OF, KINDS, SHAPES, SIZE, type Kind } from './shapes';
 
 /** Everything that sets how hard a generated board is. */
 export interface SearchParams {
-  /** Grid is size x size. */
-  readonly size: number;
+  /** Grid is rows tall by cols wide. */
+  readonly rows: number;
+  readonly cols: number;
   /** Exact number of pieces. */
   readonly pieces: number;
   /** Exact number of filled cells: the density. */
@@ -98,22 +99,23 @@ function pickKinds(p: SearchParams, rand: () => number): Kind[] | null {
 }
 
 function build(p: SearchParams, rails: Rails, kinds: readonly Kind[], rand: () => number): State | null {
-  let state: State = { size: p.size, rails, blocks: [], moves: 0 };
+  let state: State = { rows: p.rows, cols: p.cols, rails, blocks: [], moves: 0 };
   const cap = Math.ceil(p.pieces / COLOURS.length) + 1;
   const used = new Map<Colour, number>();
   const taken = new Set<string>();
   let ring = 0;
-  const mid = (p.size - 1) / 2;
-  const onRing = (c: Cell) => c.row === 0 || c.col === 0 || c.row === p.size - 1 || c.col === p.size - 1;
+  const midRow = (p.rows - 1) / 2;
+  const midCol = (p.cols - 1) / 2;
+  const onRing = (c: Cell) => c.row === 0 || c.col === 0 || c.row === p.rows - 1 || c.col === p.cols - 1;
 
   for (let i = 0; i < kinds.length; i++) {
     const free = state.blocks.filter((b) => canExit(state, b.id)).map((b) => b.id);
     const options: { state: State; score: number; cells: Cell[] }[] = [];
     for (const shape of SHAPES[kinds[i]!]) {
-      for (let row = 0; row < p.size; row++) {
-        for (let col = 0; col < p.size; col++) {
+      for (let row = 0; row < p.rows; row++) {
+        for (let col = 0; col < p.cols; col++) {
           const cells = shape.map((o) => ({ row: row + o.row, col: col + o.col }));
-          if (cells.some((c) => c.row >= p.size || c.col >= p.size || taken.has(`${c.row},${c.col}`))) continue;
+          if (cells.some((c) => c.row >= p.rows || c.col >= p.cols || taken.has(`${c.row},${c.col}`))) continue;
           if (ring + cells.filter(onRing).length > p.ringMax) continue;
           for (const colour of COLOURS) {
             if ((used.get(colour) ?? 0) >= cap) continue;
@@ -125,7 +127,7 @@ function build(p: SearchParams, rails: Rails, kinds: readonly Kind[], rand: () =
               Object.values(STEP).some((d) => taken.has(`${c.row + d.row},${c.col + d.col}`)),
             ).length;
             // Pull toward the middle so the board reads as one cluster.
-            const spread = cells.reduce((n, c) => n + Math.abs(c.row - mid) + Math.abs(c.col - mid), 0) / cells.length;
+            const spread = cells.reduce((n, c) => n + Math.abs(c.row - midRow) + Math.abs(c.col - midCol), 0) / cells.length;
             options.push({ state: next, cells, score: blocked * 3 + touching * 0.5 - spread + rand() * 2 });
           }
         }
@@ -157,7 +159,7 @@ export function blockerCount(s: State, block: Block): number {
   for (const b of s.blocks) for (const c of cellsOf(b)) owner.set(`${c.row},${c.col}`, b.id);
   const ids = new Set<string>();
   for (const c of cellsOf(block)) {
-    for (let r = c.row + d.row, k = c.col + d.col; r >= 0 && r < s.size && k >= 0 && k < s.size; r += d.row, k += d.col) {
+    for (let r = c.row + d.row, k = c.col + d.col; r >= 0 && r < s.rows && k >= 0 && k < s.cols; r += d.row, k += d.col) {
       const id = owner.get(`${r},${k}`);
       if (id && id !== block.id) ids.add(id);
     }

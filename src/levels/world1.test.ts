@@ -8,17 +8,17 @@ import { world1 } from './world1';
 
 const levels = world1.levels;
 const filled = (s: State) => s.blocks.reduce((n, b) => n + b.shape.length, 0);
-const fill = (s: State) => filled(s) / (s.size * s.size);
+const fill = (s: State) => filled(s) / (s.rows * s.cols);
 const free = (s: State) => s.blocks.filter((b) => canExit(s, b.id)).length;
 const families = (s: State) => new Set(s.blocks.map((b) => familyOf(b.shape)).filter(Boolean));
 const ringCells = (s: State) =>
-  s.blocks.flatMap(cellsOf).filter((c) => c.row === 0 || c.col === 0 || c.row === s.size - 1 || c.col === s.size - 1).length;
+  s.blocks.flatMap(cellsOf).filter((c) => c.row === 0 || c.col === 0 || c.row === s.rows - 1 || c.col === s.cols - 1).length;
 const within = (n: number, [lo, hi]: readonly [number, number]) => n >= lo && n <= hi;
 
 /** Grid, piece count, fill, free pieces, and the job 003 mix where the band asks for it. */
 function inBand(s: State, band: Band): void {
   const n = s.blocks.length;
-  expect(s.size, 'grid').toBe(band.grid);
+  expect([s.cols, s.rows], 'grid').toEqual([band.grid, band.grid]);
   expect(within(n, band.pieces), `${n} pieces`).toBe(true);
   expect(within(fill(s), band.fill), `fill ${fill(s).toFixed(2)}`).toBe(true);
   expect(within(free(s), band.free), `${free(s)} free`).toBe(true);
@@ -69,7 +69,7 @@ describe('the curve', () => {
   });
 
   it('steps the grid up from 6x6 to 7x7 at level 6', () => {
-    expect(levels.map((l) => l.start.size)).toEqual([6, 6, 6, 6, 6, 7, 7, 7, 7, 7]);
+    expect(levels.map((l) => l.start.rows)).toEqual([6, 6, 6, 6, 6, 7, 7, 7, 7, 7]);
   });
 
   it('starts at the easy end of the early band', () => {

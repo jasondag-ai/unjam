@@ -62,7 +62,7 @@ export function startGame(hud: Hud, world: World): void {
     const top = hud.header.getBoundingClientRect().bottom;
     const bottom = height - hud.footer.getBoundingClientRect().top;
     const start = world.levels[levelIndex]!.start;
-    layout = computeLayout(width, height, dpr, start.size, top, bottom);
+    layout = computeLayout(width, height, dpr, start.rows, start.cols, top, bottom);
     renderer.resize(layout, start.rails);
     requestFrame();
   }

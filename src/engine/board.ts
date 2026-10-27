@@ -31,7 +31,7 @@ export function findBlock(state: State, blockId: string): Block | undefined {
 }
 
 export function inBounds(state: State, cell: Cell): boolean {
-  return cell.row >= 0 && cell.row < state.size && cell.col >= 0 && cell.col < state.size;
+  return cell.row >= 0 && cell.row < state.rows && cell.col >= 0 && cell.col < state.cols;
 }
 
 const key = (cell: Cell) => `${cell.row},${cell.col}`;
