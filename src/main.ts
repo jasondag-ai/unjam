@@ -13,7 +13,7 @@ startGame(
     footer: byId('foot'),
     level: byId('level'),
     strikes: byId('strikes'),
-    next: byId<HTMLButtonElement>('next'),
+    action: byId<HTMLButtonElement>('action'),
     undo: byId<HTMLButtonElement>('undo'),
     restart: byId<HTMLButtonElement>('restart'),
   },

@@ -77,3 +77,8 @@ export function applyExit(state: State, blockId: string): State | null {
 export function isSolved(state: State): boolean {
   return state.blocks.length === 0;
 }
+
+/** Pieces remain and none of them can leave. Exits alone never cause this; slides can. */
+export function isStuck(state: State): boolean {
+  return !isSolved(state) && state.blocks.every((b) => !canExit(state, b.id));
+}

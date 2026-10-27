@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { boardToText, canExit, cellsOf, validateState, type Block, type State } from '../engine';
+import { applyExit, boardToText, canExit, cellsOf, isSolved, isStuck, validateState, type Block, type State } from '../engine';
 import { computeLayout } from '../game/layout';
-import { tapSolution } from '../search/search';
+import { makeRandom, tapSolution } from '../search/search';
 import { BANDS, COLOUR_SHARE, type Band } from './bands';
 import { lateCandidates } from './candidates';
 import { world1 } from './world1';
@@ -53,6 +53,19 @@ describe('world1', () => {
 
     it('clears by taps alone, one tap per piece', () => {
       expect(tapSolution(s)).toHaveLength(s.blocks.length);
+    });
+
+    it('cannot be stranded by taps: any free piece, in any order, still clears it', () => {
+      // Exits only ever empty cells, so taking one free piece never blocks another.
+      const rand = makeRandom(Number(s.blocks.length));
+      for (let run = 0; run < 20; run++) {
+        let state = s;
+        while (!isSolved(state)) {
+          expect(isStuck(state)).toBe(false);
+          const free = state.blocks.filter((b) => canExit(state, b.id));
+          state = applyExit(state, free[Math.floor(rand() * free.length)]!.id)!;
+        }
+      }
     });
   });
 });

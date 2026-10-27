@@ -3,6 +3,7 @@ import {
   current,
   exitSide,
   isSolved,
+  isStuck,
   MAX_STRIKES,
   restartAttempt,
   startAttempt,
@@ -34,7 +35,8 @@ export interface Hud {
   readonly footer: HTMLElement;
   readonly level: HTMLElement;
   readonly strikes: HTMLElement;
-  readonly next: HTMLButtonElement;
+  /** Under the board: "Next level" on a clear, "Restart" when stuck. */
+  readonly action: HTMLButtonElement;
   readonly undo: HTMLButtonElement;
   readonly restart: HTMLButtonElement;
 }
@@ -67,20 +69,28 @@ export function startGame(hud: Hud, world: World): void {
   }
 
   function updateHud(): void {
-    const solved = isSolved(current(attempt.history));
+    const state = current(attempt.history);
+    const solved = isSolved(state);
+    const stuck = isStuck(state);
     hud.level.textContent = `Level ${world.levels[levelIndex]!.id}`;
     const marks = Array.from({ length: MAX_STRIKES }, (_, i) => (i < attempt.strikes ? '✕' : '○')).join(' ');
     hud.strikes.textContent = solved
       ? 'Cleared'
-      : performance.now() < outUntil
-        ? '3 strikes: level restarted'
-        : `Strikes ${marks}`;
-    hud.strikes.setAttribute('aria-label', solved ? 'Cleared' : `Strikes: ${attempt.strikes} of ${MAX_STRIKES}`);
+      : stuck
+        ? 'Stuck: no piece can leave'
+        : performance.now() < outUntil
+          ? '3 strikes: level restarted'
+          : `Strikes ${marks}`;
+    hud.strikes.setAttribute(
+      'aria-label',
+      solved ? 'Cleared' : stuck ? 'Stuck: no piece can leave' : `Strikes: ${attempt.strikes} of ${MAX_STRIKES}`,
+    );
     hud.undo.disabled = !canUndo(attempt.history);
-    hud.restart.disabled = !canUndo(attempt.history) && attempt.strikes === 0;
+    hud.restart.disabled = !canUndo(attempt.history) && attempt.strikes === 0 && !stuck;
     const hasNext = solved && levelIndex < world.levels.length - 1;
-    hud.next.classList.toggle('hidden', !hasNext);
-    hud.next.disabled = !hasNext;
+    hud.action.textContent = stuck ? 'Restart' : 'Next level';
+    hud.action.classList.toggle('hidden', !hasNext && !stuck);
+    hud.action.disabled = !hasNext && !stuck;
   }
 
   function loadLevel(index: number): void {
@@ -203,7 +213,10 @@ export function startGame(hud: Hud, world: World): void {
     outUntil = 0;
     resetTo(restartAttempt(attempt));
   });
-  hud.next.addEventListener('click', () => loadLevel(levelIndex + 1));
+  hud.action.addEventListener('click', () => {
+    if (isStuck(current(attempt.history))) resetTo(restartAttempt(attempt));
+    else loadLevel(levelIndex + 1);
+  });
   window.addEventListener('resize', relayout);
 
   updateHud();
