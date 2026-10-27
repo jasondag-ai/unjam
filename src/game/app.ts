@@ -33,7 +33,8 @@ export interface Hud {
   readonly canvas: HTMLCanvasElement;
   readonly header: HTMLElement;
   readonly footer: HTMLElement;
-  readonly level: HTMLElement;
+  /** Tap to jump to any level (for testing). */
+  readonly level: HTMLSelectElement;
   readonly strikes: HTMLElement;
   /** Under the board: "Next level" on a clear, "Restart" when stuck. */
   readonly action: HTMLButtonElement;
@@ -72,7 +73,7 @@ export function startGame(hud: Hud, world: World): void {
     const state = current(attempt.history);
     const solved = isSolved(state);
     const stuck = isStuck(state);
-    hud.level.textContent = `Level ${world.levels[levelIndex]!.id}`;
+    hud.level.value = String(levelIndex);
     const marks = Array.from({ length: MAX_STRIKES }, (_, i) => (i < attempt.strikes ? '✕' : '○')).join(' ');
     hud.strikes.textContent = solved
       ? 'Cleared'
@@ -212,6 +213,11 @@ export function startGame(hud: Hud, world: World): void {
   hud.restart.addEventListener('click', () => {
     outUntil = 0;
     resetTo(restartAttempt(attempt));
+  });
+  world.levels.forEach((level, i) => hud.level.add(new Option(`Level ${level.id}`, String(i))));
+  hud.level.addEventListener('change', () => {
+    loadLevel(Number(hud.level.value));
+    hud.level.blur();
   });
   hud.action.addEventListener('click', () => {
     if (isStuck(current(attempt.history))) resetTo(restartAttempt(attempt));

@@ -12,9 +12,12 @@
   <body>
     <canvas id="board" aria-label="Unjam board"></canvas>
     <header id="hud">
-      <div class="status" aria-live="polite">
-        <div id="level">Level 1</div>
-        <div id="strikes">Strikes ○ ○ ○</div>
+      <div class="status">
+        <label class="level-pick">
+          <select id="level" aria-label="Choose a level"></select>
+          <span aria-hidden="true">▾</span>
+        </label>
+        <div id="strikes" aria-live="polite">Strikes ○ ○ ○</div>
       </div>
       <div class="actions">
         <button id="undo" type="button" disabled>Undo</button>

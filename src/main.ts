@@ -11,7 +11,7 @@ startGame(
     canvas: byId<HTMLCanvasElement>('board'),
     header: byId('hud'),
     footer: byId('foot'),
-    level: byId('level'),
+    level: byId<HTMLSelectElement>('level'),
     strikes: byId('strikes'),
     action: byId<HTMLButtonElement>('action'),
     undo: byId<HTMLButtonElement>('undo'),

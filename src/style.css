@@ -31,7 +31,26 @@ html, body {
   pointer-events: none;
 }
 .status { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; padding-right: 8px; }
-#level { font-size: 13px; color: var(--label); }
+/* Level picker, for testing: tap "Level N" for the phone's own list. */
+.level-pick {
+  pointer-events: auto;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  font-size: 13px;
+  color: var(--label);
+}
+#level {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+}
 #strikes { overflow-wrap: anywhere; }
 .actions { display: flex; gap: 8px; }
 .actions button,
