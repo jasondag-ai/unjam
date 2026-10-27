@@ -11,9 +11,14 @@ export interface Cell {
   readonly col: number;
 }
 
-/** A polyomino of 1 to 6 cells. */
+/** A polyomino of 1 to 7 cells. */
 export interface Block {
   readonly id: string;
+  /**
+   * Pieces placed together as one shape (a nest of L's, a staircase) share a
+   * group name. Data only: the rules ignore it.
+   */
+  readonly group?: string;
   readonly colour: Colour;
   /** Board cell that offset {row: 0, col: 0} sits on. */
   readonly anchor: Cell;

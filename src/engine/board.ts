@@ -2,7 +2,7 @@ import type { Block, Cell, Direction, Side, State } from './types';
 
 export const BOARD_SIZE = 5;
 export const MIN_PIECE = 1;
-export const MAX_PIECE = 6;
+export const MAX_PIECE = 7;
 
 export const DIRECTIONS: readonly Direction[] = ['up', 'right', 'down', 'left'];
 
