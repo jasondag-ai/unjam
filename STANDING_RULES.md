@@ -21,7 +21,9 @@ is checked against all of them.
    lives, energy, timers, ads or accounts.
 6. Every level solvable by construction. Generated in
    reverse, never hand-authored past M1.
-7. Par comes from the solver, never a guess.
+7. The solver, not a guess, decides whether a board is
+   solvable and what a hint points at. Par is gone; the
+   solver is not.
 8. A level's palette is data on its world, never hard-coded
    in the renderer.
 9. Nothing exits around a corner.
