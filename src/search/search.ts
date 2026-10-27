@@ -218,13 +218,15 @@ function build(p: SearchParams, rails: Rails, kinds: readonly Kind[], quota: Map
 
 /**
  * Job 012: deal the board's colours out again at random, so colour says
- * nothing about position, then repair. A repair swaps the colours of a stuck
- * piece and another piece (shares stay the same) and is kept only if fewer
- * pieces are stuck and every colour still reaches the spread target. Null if
- * the board cannot be made to clear by taps that way.
+ * nothing about position, then repair by swapping two pieces' colours
+ * (shares stay the same). First, swaps that leave fewer pieces stuck while
+ * every colour keeps the spread target. Then, swaps that break up
+ * same-colour neighbours, down to what a random deal gives plus five
+ * points, keeping the board clearable and the spread. Null if it cannot get
+ * there.
  *
- * Positions never change here, so each piece's blockers toward each rail and
- * its distance to each rail are worked out once.
+ * Positions never change here, so each piece's blockers toward each rail,
+ * its distance to each rail and which pieces touch are worked out once.
  */
 function mixColours(s: State, target: number, rand: () => number): State | null {
   const sides = (Object.keys(s.rails) as Side[]);
@@ -248,6 +250,16 @@ function mixColours(s: State, target: number, rand: () => number): State | null 
     })) as Record<Side, number[]>,
   );
   const dist = s.blocks.map((b) => Object.fromEntries(sides.map((side) => [side, railDistance(cellsOf(b), side, s.rows, s.cols)])) as Record<Side, number>);
+  const touching: [number, number][] = [];
+  const seenPair = new Set<number>();
+  s.blocks.forEach((b, i) => cellsOf(b).forEach((c) => {
+    for (const d of [STEP.right, STEP.bottom]) {
+      const j = owner.get(key(c.row + d.row, c.col + d.col));
+      if (j === undefined || j === i || seenPair.has(Math.min(i, j) * 1000 + Math.max(i, j))) continue;
+      seenPair.add(Math.min(i, j) * 1000 + Math.max(i, j));
+      touching.push([i, j]);
+    }
+  }));
 
   /** Pieces that taps can never clear, for this colouring (removal in dependency order). */
   const stuck = (colours: readonly Colour[]): number[] => {
@@ -277,31 +289,46 @@ function mixColours(s: State, target: number, rand: () => number): State | null 
     return worst;
   };
 
+  /** Share of touching pairs that are the same colour. */
+  const clump = (colours: readonly Colour[]) =>
+    touching.length === 0 ? 0 : touching.filter(([i, j]) => colours[i] === colours[j]).length / touching.length;
+
   const colours = s.blocks.map((b) => b.colour);
+  const counts = [...new Set(colours)].map((c) => colours.filter((x) => x === c).length);
+  const clumpMax = counts.reduce((t, k) => t + k * (k - 1), 0) / (n * (n - 1)) + 0.05;
   for (let i = n - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
     [colours[i], colours[j]] = [colours[j]!, colours[i]!];
   }
   let stuckNow = stuck(colours);
   let spreadNow = spread(colours);
-  for (let step = 0; step < 20000 && (stuckNow.length > 0 || spreadNow < target); step++) {
-    const a = stuckNow.length > 0 ? stuckNow[Math.floor(rand() * stuckNow.length)]! : Math.floor(rand() * n);
+  let clumpNow = clump(colours);
+  const done = () => stuckNow.length === 0 && spreadNow >= target && clumpNow <= clumpMax;
+  for (let step = 0; step < 20000 && !done(); step++) {
+    const fixing = stuckNow.length > 0 || spreadNow < target;
+    const sameColour = touching.filter(([i, j]) => colours[i] === colours[j]);
+    const a = fixing
+      ? stuckNow.length > 0 ? stuckNow[Math.floor(rand() * stuckNow.length)]! : Math.floor(rand() * n)
+      : sameColour[Math.floor(rand() * sameColour.length)]![Math.floor(rand() * 2)]!;
     const b = Math.floor(rand() * n);
     if (colours[a] === colours[b]) continue;
     [colours[a], colours[b]] = [colours[b]!, colours[a]!];
     const nextStuck = stuck(colours);
     const nextSpread = spread(colours);
-    const better =
-      (nextStuck.length < stuckNow.length && nextSpread >= target) ||
-      (nextStuck.length === stuckNow.length && nextSpread > spreadNow);
+    const nextClump = clump(colours);
+    const better = fixing
+      ? (nextStuck.length < stuckNow.length && nextSpread >= target) ||
+        (nextStuck.length === stuckNow.length && nextSpread > spreadNow)
+      : nextStuck.length === 0 && nextSpread >= target && nextClump < clumpNow;
     if (better) {
       stuckNow = nextStuck;
       spreadNow = nextSpread;
+      clumpNow = nextClump;
     } else {
       [colours[a], colours[b]] = [colours[b]!, colours[a]!];
     }
   }
-  if (stuckNow.length > 0 || spreadNow < target) return null;
+  if (!done()) return null;
   return { ...s, blocks: s.blocks.map((b) => ({ ...b, colour: colours[index.get(b.id)!]! })) };
 }
 
