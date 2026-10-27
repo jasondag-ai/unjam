@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { boardToText, canExit, cellsOf, validateState, type State } from '../engine';
+import { boardToText, canExit, cellsOf, validateState, type Block, type State } from '../engine';
+import { computeLayout } from '../game/layout';
 import { tapSolution } from '../search/search';
-import { familyOf } from '../search/shapes';
-import { BANDS, PIECE_SIZE, type Band } from './bands';
+import { BANDS, COLOUR_SHARE, type Band } from './bands';
 import { lateCandidates } from './candidates';
 import { world1 } from './world1';
 
@@ -10,23 +10,18 @@ const levels = world1.levels;
 const filled = (s: State) => s.blocks.reduce((n, b) => n + b.shape.length, 0);
 const fill = (s: State) => filled(s) / (s.rows * s.cols);
 const free = (s: State) => s.blocks.filter((b) => canExit(s, b.id)).length;
-const families = (s: State) => new Set(s.blocks.map((b) => familyOf(b.shape)).filter(Boolean));
+const small = (s: State) => s.blocks.filter((b) => b.shape.length === 2 || b.shape.length === 3).length;
 const ringCells = (s: State) =>
   s.blocks.flatMap(cellsOf).filter((c) => c.row === 0 || c.col === 0 || c.row === s.rows - 1 || c.col === s.cols - 1).length;
 const within = (n: number, [lo, hi]: readonly [number, number]) => n >= lo && n <= hi;
 
-/** Grid, piece count, fill, free pieces, and the job 003 mix where the band asks for it. */
+/** Grid, piece count, fill, free pieces where the band sets them, and "mostly 2 and 3 cells". */
 function inBand(s: State, band: Band): void {
-  const n = s.blocks.length;
-  expect([s.cols, s.rows], 'grid').toEqual([band.grid, band.grid]);
-  expect(within(n, band.pieces), `${n} pieces`).toBe(true);
+  expect([s.cols, s.rows], 'grid').toEqual([band.cols, band.rows]);
+  expect(within(s.blocks.length, band.pieces), `${s.blocks.length} pieces`).toBe(true);
   expect(within(fill(s), band.fill), `fill ${fill(s).toFixed(2)}`).toBe(true);
-  expect(within(free(s), band.free), `${free(s)} free`).toBe(true);
-  if (band.mix) {
-    expect(s.blocks.filter((b) => b.shape.length === 2).length, 'dominoes').toBeLessThanOrEqual(n / 3);
-    expect(s.blocks.filter((b) => b.shape.length >= 3).length, '3+ cell pieces').toBeGreaterThanOrEqual(n / 2);
-    expect(families(s).size, 'L/T/S/Z families').toBeGreaterThanOrEqual(3);
-  }
+  if (band.free) expect(within(free(s), band.free), `${free(s)} free`).toBe(true);
+  expect(small(s), 'mostly 2 and 3 cell pieces').toBeGreaterThanOrEqual(0.6 * s.blocks.length);
 }
 
 describe('world1', () => {
@@ -39,14 +34,21 @@ describe('world1', () => {
   });
 
   describe.each(levels.map((l) => [l.id, l.start] as const))('level %s', (_, s) => {
-    it('is a valid board on the world rails, using every colour', () => {
+    it('is a valid portrait board on the world rails', () => {
       expect(() => validateState(s)).not.toThrow();
       expect(s.rails).toEqual(world1.rails);
-      expect(new Set(s.blocks.map((b) => b.colour)).size).toBe(4);
+      expect(s.rows).toBeGreaterThan(s.cols);
     });
 
-    it('holds every piece to 2 to 4 cells', () => {
-      for (const b of s.blocks) expect(within(b.shape.length, PIECE_SIZE)).toBe(true);
+    it('gives each of the four colours 20 to 30 percent of the pieces', () => {
+      for (const colour of ['amber', 'cyan', 'violet', 'mint'] as const) {
+        const share = s.blocks.filter((b) => b.colour === colour).length / s.blocks.length;
+        expect(within(share, COLOUR_SHARE), `${colour} ${share.toFixed(2)}`).toBe(true);
+      }
+    });
+
+    it('holds every piece to 1 to 5 cells', () => {
+      for (const b of s.blocks) expect(within(b.shape.length, [1, 5])).toBe(true);
     });
 
     it('clears by taps alone, one tap per piece', () => {
@@ -68,38 +70,75 @@ describe('the curve', () => {
     }
   });
 
-  it('steps the grid up from 6x6 to 7x7 at level 6', () => {
-    expect(levels.map((l) => l.start.rows)).toEqual([6, 6, 6, 6, 6, 7, 7, 7, 7, 7]);
+  it('is 6 wide by 7 tall for levels 1 to 5, 8 by 9 for 6 to 10', () => {
+    expect(levels.map((l) => `${l.start.cols}x${l.start.rows}`)).toEqual([
+      '6x7', '6x7', '6x7', '6x7', '6x7', '8x9', '8x9', '8x9', '8x9', '8x9',
+    ]);
   });
 
-  it('starts at the easy end of the early band', () => {
-    const s = levels[0]!.start;
-    expect(s.blocks.length).toBe(BANDS.early.pieces[0]);
-    expect(fill(s)).toBeLessThan(0.33);
-    expect(ringCells(s)).toBe(0);
-  });
-
-  it('ends at the top of the middle band', () => {
-    const s = levels[9]!.start;
-    expect(fill(s)).toBeGreaterThanOrEqual(0.62);
-    expect(free(s)).toBe(1);
+  it('starts at the easy end and ends at the top of the middle band', () => {
+    expect(fill(levels[0]!.start)).toBeLessThan(0.37);
+    expect(ringCells(levels[0]!.start)).toBe(0);
+    expect(levels[9]!.start.blocks).toHaveLength(BANDS.middle.pieces[1]);
+    expect(fill(levels[9]!.start)).toBeGreaterThanOrEqual(0.78);
   });
 });
 
 describe.each(levels.slice(0, 5).map((l) => [l.id, l.start] as const))('early band: level %s', (_, s) => {
   it('sits in the early band', () => inBand(s, BANDS.early));
 
-  it('leans to 2 and 3 cell pieces', () => {
-    expect(s.blocks.filter((b) => b.shape.length <= 3).length).toBeGreaterThanOrEqual(s.blocks.length * 0.75);
-  });
-
   it('is clustered in the middle, outer ring mostly empty', () => {
-    expect(ringCells(s)).toBeLessThanOrEqual(5); // of 20 ring cells
+    expect(ringCells(s)).toBeLessThanOrEqual(5); // of 22 ring cells
   });
 });
 
 describe.each(levels.slice(5, 10).map((l) => [l.id, l.start] as const))('middle band: level %s', (_, s) => {
-  it('sits in the middle band, with the job 003 mix', () => inBand(s, BANDS.middle));
+  it('sits in the middle band', () => inBand(s, BANDS.middle));
+
+  it('has no single-cell pieces', () => {
+    expect(s.blocks.every((b) => b.shape.length >= 2)).toBe(true);
+  });
+});
+
+describe('middle band as a whole', () => {
+  it('has some 4 and 5 cell pieces', () => {
+    const big = levels.slice(5).flatMap((l) => l.start.blocks).filter((b) => b.shape.length >= 4);
+    expect(big.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('rule 2 on a 375 px phone', () => {
+  // HUD bands as on the page: header about 68 px, footer about 100 px.
+  const phones = [[375, 667], [375, 812]] as const;
+  const cellOn = (w: number, h: number, rows: number, cols: number) => computeLayout(w, h, 3, rows, cols, 68, 100).cell;
+  const longest = (b: Block) => {
+    const rows = b.shape.map((c) => c.row);
+    const cols = b.shape.map((c) => c.col);
+    return Math.max(Math.max(...rows) - Math.min(...rows), Math.max(...cols) - Math.min(...cols)) + 1;
+  };
+
+  it('keeps cells at 28 px or more in every band', () => {
+    for (const [w, h] of phones) {
+      for (const band of Object.values(BANDS)) expect(cellOn(w, h, band.rows, band.cols), band.name).toBeGreaterThanOrEqual(28);
+    }
+  });
+
+  it('gives every piece a touch target of at least 44 px along its longest side', () => {
+    for (const [w, h] of phones) {
+      for (const { start: s } of levels) {
+        const cell = cellOn(w, h, s.rows, s.cols);
+        for (const b of s.blocks) expect(longest(b) * cell, `${b.id} on ${w}x${h}`).toBeGreaterThanOrEqual(44);
+      }
+    }
+  });
+
+  it('allows single-cell pieces only where a cell is 44 px or larger', () => {
+    for (const [w, h] of phones) {
+      for (const { start: s } of levels) {
+        if (s.blocks.some((b) => b.shape.length === 1)) expect(cellOn(w, h, s.rows, s.cols)).toBeGreaterThanOrEqual(44);
+      }
+    }
+  });
 });
 
 describe('late-band candidates', () => {

@@ -71,19 +71,3 @@ describe('blockOutline', () => {
     expect(blockOutline(layout, bar)).toHaveLength(4);
   });
 });
-
-describe('rule 2 on real phones', () => {
-  // HUD bands as on the page: header about 68 px, footer about 100 px.
-  const cell = (w: number, h: number, n: number) => computeLayout(w, h, 3, n, n, 68, 100).cell;
-
-  it('keeps 6x6 and 7x7 cells at 44 px or more on a 390 px wide phone and up', () => {
-    for (const [w, h] of [[390, 844], [393, 852], [430, 932]] as const) {
-      expect(cell(w, h, 6)).toBeGreaterThanOrEqual(44);
-      expect(cell(w, h, 7)).toBeGreaterThanOrEqual(44);
-    }
-  });
-
-  it('6x6 holds on a 375 px wide phone too', () => {
-    expect(cell(375, 667, 6)).toBeGreaterThanOrEqual(44);
-  });
-});

@@ -191,13 +191,17 @@ describe('isSolved', () => {
 describe('validateState', () => {
   const v = (blocks: Block[], rails: Rails = RAILS) => () => validateState({ rows: 5, cols: 5, blocks, rails });
 
+  it('accepts single cells and pieces up to 6 cells', () => {
+    expect(() => board([piece('A', 'cyan', 0, 0, ['#']), piece('B', 'mint', 2, 2, ['###', '###'])], 6)).not.toThrow();
+  });
+
   it('accepts pieces of 2 to 6 cells on a 6x6 board', () => {
     expect(() => board([piece('A', 'cyan', 0, 0, ['###', '###'])], 6)).not.toThrow();
   });
 
   it('rejects bad pieces and bad rails', () => {
-    expect(v([piece('A', 'cyan', 0, 0, ['#'])])).toThrow(/2 to 6/);
-    expect(v([piece('A', 'cyan', 0, 0, ['####', '###'])])).toThrow(/2 to 6/);
+    expect(v([{ ...piece('A', 'cyan', 0, 0, ['#']), shape: [] }])).toThrow(/1 to 6/);
+    expect(v([piece('A', 'cyan', 0, 0, ['####', '###'])])).toThrow(/1 to 6/);
     expect(v([piece('A', 'cyan', 0, 0, ['#.#'])])).toThrow(/connected/);
     expect(v([piece('A', 'cyan', 0, 0, ['##']), piece('B', 'mint', 0, 1, ['##'])])).toThrow(/overlap/);
     expect(v([piece('A', 'cyan', 0, 4, ['##'])])).toThrow(/off the board/);

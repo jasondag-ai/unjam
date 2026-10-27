@@ -11,7 +11,7 @@ export interface Cell {
   readonly col: number;
 }
 
-/** A polyomino of 2 to 6 cells. */
+/** A polyomino of 1 to 6 cells. */
 export interface Block {
   readonly id: string;
   readonly colour: Colour;

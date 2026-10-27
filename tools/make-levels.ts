@@ -2,27 +2,28 @@
 // TypeScript module. Run: npm run levels
 // Same seeds, same boards.
 import { boardToText } from '../src/engine';
-import { BANDS, PIECE_SIZE } from '../src/levels/bands';
+import { BANDS, COLOUR_SHARE } from '../src/levels/bands';
 import { searchBoard, type SearchParams } from '../src/search/search';
 
 const RAILS = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
 
-type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax'> & { readonly band: 'early' | 'middle' };
+type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'tries'> & { readonly band: 'early' | 'middle' };
 
-// Rising steadily: pieces 5 -> 10, fill 31% -> 63%, grid 6x6 -> 7x7 at level 6.
-// Middle levels follow the job 003 mix, which caps a 7x7 board at about 10
-// pieces inside 65 percent fill.
+// Rising steadily: 6x7 for levels 1 to 5, 8x9 from level 6. Fill 36% -> 79%,
+// pieces 8 -> 26. Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give
+// every colour 20 to 30 percent. Middle levels take the fewest free pieces
+// the search finds (it prefers fewest).
 const CURVE: readonly Plan[] = [
-  { band: 'early', pieces: 5, cells: 11, free: [3, 3], ringMax: 0 },
-  { band: 'early', pieces: 6, cells: 13, free: [3, 3], ringMax: 1 },
-  { band: 'early', pieces: 6, cells: 14, free: [2, 3], ringMax: 2 },
-  { band: 'early', pieces: 7, cells: 15, free: [2, 2], ringMax: 3 },
-  { band: 'early', pieces: 7, cells: 16, free: [2, 2], ringMax: 4 },
-  { band: 'middle', pieces: 9, cells: 26, free: [2, 2], ringMax: 24 },
-  { band: 'middle', pieces: 9, cells: 27, free: [1, 2], ringMax: 24 },
-  { band: 'middle', pieces: 10, cells: 29, free: [1, 1], ringMax: 24 },
-  { band: 'middle', pieces: 10, cells: 30, free: [1, 1], ringMax: 24 },
-  { band: 'middle', pieces: 10, cells: 31, free: [1, 1], ringMax: 24 },
+  { band: 'early', pieces: 8, cells: 15, free: [3, 3], ringMax: 0, centrePull: 1, tries: 600 },
+  { band: 'early', pieces: 8, cells: 17, free: [3, 3], ringMax: 2, centrePull: 1, tries: 600 },
+  { band: 'early', pieces: 8, cells: 18, free: [2, 3], ringMax: 3, centrePull: 1, tries: 600 },
+  { band: 'early', pieces: 10, cells: 19, free: [2, 2], ringMax: 4, centrePull: 1, tries: 600 },
+  { band: 'early', pieces: 10, cells: 21, free: [2, 2], ringMax: 5, centrePull: 1, tries: 600 },
+  { band: 'middle', pieces: 18, cells: 47, free: [1, 26], ringMax: 30, centrePull: 0.2, tries: 800 },
+  { band: 'middle', pieces: 20, cells: 50, free: [1, 26], ringMax: 30, centrePull: 0.2, tries: 800 },
+  { band: 'middle', pieces: 22, cells: 53, free: [1, 26], ringMax: 30, centrePull: 0.2, tries: 800 },
+  { band: 'middle', pieces: 24, cells: 55, free: [1, 26], ringMax: 30, centrePull: 0.2, tries: 800 },
+  { band: 'middle', pieces: 26, cells: 57, free: [1, 26], ringMax: 30, centrePull: 0.2, tries: 800 },
 ];
 
 const out: string[] = [
@@ -33,14 +34,15 @@ const out: string[] = [
 ];
 CURVE.forEach((plan, i) => {
   const band = BANDS[plan.band];
+  const { band: _, ...rest } = plan;
   const params: SearchParams = {
-    ...plan,
-    rows: band.grid,
-    cols: band.grid,
-    pieceSize: PIECE_SIZE,
-    minFamilies: band.mix ? 3 : 0,
-    maxDominoes: band.mix ? Math.floor(plan.pieces / 3) : plan.pieces,
-    tries: 1000,
+    ...rest,
+    rows: band.rows,
+    cols: band.cols,
+    kinds: band.kinds,
+    sizeWeights: band.sizeWeights,
+    smallShare: 0.6,
+    colourShare: COLOUR_SHARE,
     seed: 1000 + i,
   };
   const result = searchBoard(params, RAILS);

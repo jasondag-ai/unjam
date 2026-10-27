@@ -1,7 +1,7 @@
 import type { Cell } from '../engine';
 
 /** Piece kinds the board search can place. J counts as an L. */
-export type Kind = 'D' | 'I3' | 'L3' | 'I4' | 'L4' | 'J4' | 'T4' | 'S4' | 'Z4' | 'O4';
+export type Kind = 'M' | 'D' | 'I3' | 'L3' | 'I4' | 'L4' | 'J4' | 'T4' | 'S4' | 'Z4' | 'O4' | 'I5' | 'L5' | 'J5';
 
 export type Family = 'L' | 'T' | 'S' | 'Z';
 
@@ -30,6 +30,7 @@ function rotations(rows: readonly string[]): Cell[][] {
 }
 
 const DRAWN: Readonly<Record<Kind, readonly string[]>> = {
+  M: ['#'],
   D: ['##'],
   I3: ['###'],
   L3: ['#.', '##'],
@@ -40,6 +41,9 @@ const DRAWN: Readonly<Record<Kind, readonly string[]>> = {
   S4: ['.##', '##.'],
   Z4: ['##.', '.##'],
   O4: ['##', '##'],
+  I5: ['#####'],
+  L5: ['#.', '#.', '#.', '##'],
+  J5: ['.#', '.#', '.#', '##'],
 };
 
 export const KINDS = Object.keys(DRAWN) as Kind[];
@@ -52,7 +56,7 @@ export const SIZE: Readonly<Record<Kind, number>> = Object.fromEntries(
   KINDS.map((k) => [k, parse(DRAWN[k]).length]),
 ) as Record<Kind, number>;
 
-export const FAMILY_OF: Readonly<Partial<Record<Kind, Family>>> = { L3: 'L', L4: 'L', J4: 'L', T4: 'T', S4: 'S', Z4: 'Z' };
+export const FAMILY_OF: Readonly<Partial<Record<Kind, Family>>> = { L3: 'L', L4: 'L', J4: 'L', L5: 'L', J5: 'L', T4: 'T', S4: 'S', Z4: 'Z' };
 
 const BY_KEY = new Map<string, Kind>(KINDS.flatMap((k) => SHAPES[k].map((s) => [shapeKey(s), k] as const)));
 
@@ -61,7 +65,7 @@ export function kindOf(shape: readonly Cell[]): Kind | null {
   return BY_KEY.get(shapeKey(shape)) ?? null;
 }
 
-/** L, T, S or Z, or null for bars, squares and dominoes. */
+/** L, T, S or Z, or null for bars, squares, dominoes and single cells. */
 export function familyOf(shape: readonly Cell[]): Family | null {
   const kind = kindOf(shape);
   return kind ? (FAMILY_OF[kind] ?? null) : null;
