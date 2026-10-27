@@ -33,7 +33,6 @@ export interface State {
   readonly cols: number;
   readonly blocks: readonly Block[];
   readonly rails: Rails;
-  readonly moves: number;
 }
 
 /** Cells a block can slide in each direction before it hits a block or the frame. */

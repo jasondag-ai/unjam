@@ -62,7 +62,6 @@ export function applySlide(state: State, blockId: string, dir: Direction): State
     blocks: state.blocks.map((b) =>
       b.id === blockId ? { ...b, anchor: { row: b.anchor.row + d.row, col: b.anchor.col + d.col } } : b,
     ),
-    moves: state.moves + 1,
   };
 }
 
@@ -72,7 +71,6 @@ export function applyExit(state: State, blockId: string): State | null {
   return {
     ...state,
     blocks: state.blocks.filter((b) => b.id !== blockId),
-    moves: state.moves + 1,
   };
 }
 

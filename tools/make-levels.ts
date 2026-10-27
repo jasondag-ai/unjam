@@ -49,7 +49,7 @@ CURVE.forEach((plan, i) => {
   const filled = s.blocks.reduce((n, b) => n + b.shape.length, 0);
   out.push(`  // Level ${i + 1} (${band.name}, ${s.cols}x${s.rows}): ${s.blocks.length} pieces, ${filled} of ${s.cols * s.rows} cells, ${result.pinned} pinned.`);
   for (const line of boardToText(s).split('\n')) out.push(`  //   ${line}`);
-  out.push(`  {`, `    id: '${i + 1}',`, `    start: {`, `      rows: ${s.rows},`, `      cols: ${s.cols},`, `      moves: 0,`);
+  out.push(`  {`, `    id: '${i + 1}',`, `    start: {`, `      rows: ${s.rows},`, `      cols: ${s.cols},`);
   out.push(`      rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },`);
   out.push(`      blocks: [`);
   for (const b of s.blocks) {

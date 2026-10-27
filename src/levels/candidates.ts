@@ -31,7 +31,6 @@ export const lateCandidates: readonly Level[] = [
     start: {
       rows: 6,
       cols: 6,
-      moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
         p('A', 'amber', 0, 1, ['##', '.#']),

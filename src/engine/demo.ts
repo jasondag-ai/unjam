@@ -17,7 +17,6 @@ import {
 const start: State = {
   rows: 5,
   cols: 5,
-  moves: 0,
   rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
   blocks: [
     { id: 'A', colour: 'cyan', anchor: { row: 0, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
@@ -48,7 +47,7 @@ for (const step of script) {
   const label = 'exit' in step ? `exit ${step.exit}` : `slide ${step.slide} ${step.dir}`;
   const next = 'exit' in step ? applyExit(s, step.exit) : applySlide(s, step.slide, step.dir);
   history = commit(history, next);
-  console.log(`\n${label}: ${next ? 'ok' : 'rejected'}  (moves ${current(history).moves})`);
+  console.log(`\n${label}: ${next ? 'ok' : 'rejected'}`);
   if (next) console.log(boardToText(next));
 }
 

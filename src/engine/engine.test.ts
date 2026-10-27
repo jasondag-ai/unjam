@@ -28,7 +28,7 @@ const piece = (id: string, colour: Colour, row: number, col: number, rows: strin
   shape: rows.flatMap((line, r) => [...line].flatMap((ch, c) => (ch === '#' ? [{ row: r, col: c }] : []))),
 });
 const board = (blocks: Block[], rows = 5, cols = rows): State => {
-  const s = deepFreeze({ rows, cols, blocks, rails: RAILS, moves: 0 });
+  const s = deepFreeze({ rows, cols, blocks, rails: RAILS });
   validateState(s);
   return s;
 };
@@ -140,18 +140,15 @@ describe('applySlide and applyExit', () => {
   });
 });
 
-describe('move count', () => {
-  it('counts slides and exits but not rejected taps', () => {
+describe('history', () => {
+  it('records slides and exits but not rejected moves', () => {
     const s = board([piece('A', 'cyan', 0, 0, ['##']), piece('B', 'amber', 0, 3, ['#', '#']), piece('C', 'violet', 4, 3, ['##'])]);
     let h = createHistory(s);
     h = commit(h, applyExit(current(h), 'A')); // rejected: B in the lane
-    expect(current(h).moves).toBe(0);
+    expect(h.states).toHaveLength(1);
     h = commit(h, applySlide(current(h), 'B', 'down'));
-    expect(current(h).moves).toBe(1);
     h = commit(h, applyExit(current(h), 'A'));
-    expect(current(h).moves).toBe(2);
     h = commit(h, applySlide(current(h), 'C', 'down')); // rejected: frame
-    expect(current(h).moves).toBe(2);
     expect(h.states).toHaveLength(3);
   });
 });
@@ -166,8 +163,6 @@ describe('history', () => {
     const back = undo(h2);
     expect(current(back)).toBe(current(h1));
     expect(current(undo(back))).toBe(s);
-    expect(current(h2).moves).toBe(2);
-    expect(current(back).moves).toBe(1);
   });
 
   it('cannot undo past the start', () => {
@@ -194,7 +189,7 @@ describe('isSolved', () => {
 });
 
 describe('validateState', () => {
-  const v = (blocks: Block[], rails: Rails = RAILS) => () => validateState({ rows: 5, cols: 5, blocks, rails, moves: 0 });
+  const v = (blocks: Block[], rails: Rails = RAILS) => () => validateState({ rows: 5, cols: 5, blocks, rails });
 
   it('accepts pieces of 2 to 6 cells on a 6x6 board', () => {
     expect(() => board([piece('A', 'cyan', 0, 0, ['###', '###'])], 6)).not.toThrow();

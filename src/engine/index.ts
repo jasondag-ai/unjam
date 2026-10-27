@@ -4,3 +4,5 @@ export { legalSlides, exitSide, canExit, applySlide, applyExit, isSolved } from 
 export { createHistory, current, commit, canUndo, undo, restart } from './history';
 export type { History } from './history';
 export { boardToText } from './text';
+export { MAX_STRIKES, startAttempt, tap, undoAttempt, restartAttempt } from './strikes';
+export type { Attempt, TapResult } from './strikes';

@@ -16,7 +16,6 @@ export const generatedLevels: readonly Level[] = [
     start: {
       rows: 6,
       cols: 6,
-      moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
         { id: 'A', colour: 'mint', anchor: { row: 1, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
@@ -41,7 +40,6 @@ export const generatedLevels: readonly Level[] = [
     start: {
       rows: 6,
       cols: 6,
-      moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
         { id: 'A', colour: 'amber', anchor: { row: 1, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
@@ -67,7 +65,6 @@ export const generatedLevels: readonly Level[] = [
     start: {
       rows: 6,
       cols: 6,
-      moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
         { id: 'A', colour: 'mint', anchor: { row: 0, col: 2 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
@@ -93,7 +90,6 @@ export const generatedLevels: readonly Level[] = [
     start: {
       rows: 6,
       cols: 6,
-      moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
         { id: 'A', colour: 'cyan', anchor: { row: 1, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
@@ -120,7 +116,6 @@ export const generatedLevels: readonly Level[] = [
     start: {
       rows: 6,
       cols: 6,
-      moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
         { id: 'A', colour: 'mint', anchor: { row: 0, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
@@ -148,7 +143,6 @@ export const generatedLevels: readonly Level[] = [
     start: {
       rows: 7,
       cols: 7,
-      moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
         { id: 'A', colour: 'mint', anchor: { row: 0, col: 0 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 0 }] },
@@ -178,7 +172,6 @@ export const generatedLevels: readonly Level[] = [
     start: {
       rows: 7,
       cols: 7,
-      moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
         { id: 'A', colour: 'amber', anchor: { row: 0, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }] },
@@ -208,7 +201,6 @@ export const generatedLevels: readonly Level[] = [
     start: {
       rows: 7,
       cols: 7,
-      moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
         { id: 'A', colour: 'mint', anchor: { row: 0, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
@@ -239,7 +231,6 @@ export const generatedLevels: readonly Level[] = [
     start: {
       rows: 7,
       cols: 7,
-      moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
         { id: 'A', colour: 'mint', anchor: { row: 0, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
@@ -270,7 +261,6 @@ export const generatedLevels: readonly Level[] = [
     start: {
       rows: 7,
       cols: 7,
-      moves: 0,
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
         { id: 'A', colour: 'mint', anchor: { row: 0, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },

@@ -32,7 +32,7 @@ html, body {
 }
 .status { display: flex; flex-direction: column; gap: 2px; }
 #level { font-size: 13px; color: var(--label); }
-#moves { font-variant-numeric: tabular-nums; }
+#strikes { white-space: nowrap; }
 .actions { display: flex; gap: 8px; }
 .actions button,
 #next {

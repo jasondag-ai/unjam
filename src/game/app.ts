@@ -1,17 +1,15 @@
 import {
-  applyExit,
-  canExit,
   canUndo,
-  commit,
-  createHistory,
   current,
   exitSide,
-  findBlock,
   isSolved,
-  restart,
-  undo,
+  MAX_STRIKES,
+  restartAttempt,
+  startAttempt,
+  tap as tapPiece,
+  undoAttempt,
+  type Attempt,
   type Block,
-  type History,
   type Side,
 } from '../engine';
 import type { World } from '../levels/types';
@@ -23,6 +21,8 @@ const EXIT_MS = 220; // rule 11: under 300 ms
 const SHAKE_MS = 200;
 const SHAKE_PX = 4;
 const PULSE_MS = 240;
+/** How long "3 strikes" stays up after the level restarts. */
+const OUT_NOTE_MS = 1600;
 /** A pointer that moves further than this is not a tap. */
 const TAP_SLOP = 12;
 
@@ -35,7 +35,7 @@ export interface Hud {
   readonly header: HTMLElement;
   readonly footer: HTMLElement;
   readonly level: HTMLElement;
-  readonly moves: HTMLElement;
+  readonly strikes: HTMLElement;
   readonly next: HTMLButtonElement;
   readonly undo: HTMLButtonElement;
   readonly restart: HTMLButtonElement;
@@ -46,7 +46,8 @@ export function startGame(hud: Hud, world: World): void {
   const renderer = new Renderer(ctx, world);
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   let levelIndex = 0;
-  let history: History = createHistory(world.levels[0]!.start);
+  let attempt: Attempt = startAttempt(world.levels[0]!.start);
+  let outUntil = 0;
   let layout: Layout;
   let anims: Anim[] = [];
   let frameRequested = false;
@@ -68,12 +69,17 @@ export function startGame(hud: Hud, world: World): void {
   }
 
   function updateHud(): void {
-    const state = current(history);
-    const solved = isSolved(state);
+    const solved = isSolved(current(attempt.history));
     hud.level.textContent = `Level ${world.levels[levelIndex]!.id}`;
-    hud.moves.textContent = solved ? `Cleared in ${state.moves} moves` : `Moves ${state.moves}`;
-    hud.undo.disabled = !canUndo(history);
-    hud.restart.disabled = !canUndo(history);
+    const marks = Array.from({ length: MAX_STRIKES }, (_, i) => (i < attempt.strikes ? '✕' : '○')).join(' ');
+    hud.strikes.textContent = solved
+      ? 'Cleared'
+      : performance.now() < outUntil
+        ? '3 strikes: level restarted'
+        : `Strikes ${marks}`;
+    hud.strikes.setAttribute('aria-label', solved ? 'Cleared' : `Strikes: ${attempt.strikes} of ${MAX_STRIKES}`);
+    hud.undo.disabled = !canUndo(attempt.history);
+    hud.restart.disabled = !canUndo(attempt.history) && attempt.strikes === 0;
     const hasNext = solved && levelIndex < world.levels.length - 1;
     hud.next.classList.toggle('hidden', !hasNext);
     hud.next.disabled = !hasNext;
@@ -81,30 +87,36 @@ export function startGame(hud: Hud, world: World): void {
 
   function loadLevel(index: number): void {
     levelIndex = index;
-    resetTo(createHistory(world.levels[index]!.start));
+    outUntil = 0;
+    resetTo(startAttempt(world.levels[index]!.start));
     relayout();
   }
 
   // The engine state changes at once; animations only replay it visually,
   // so the next tap is accepted immediately and taps chain (rule 11).
+  // Rule 5: a tap on a piece whose lane is not clear is a strike; the third
+  // restarts the level.
   function tap(id: string, now: number): void {
-    const state = current(history);
-    if (!findBlock(state, id)) return;
-    const side = canExit(state, id);
-    if (side) {
-      anims = anims.filter((a) => !(a.kind === 'shake' && a.id === id));
-      anims.push({ kind: 'exit', block: findBlock(state, id)!, side, start: now });
-      history = commit(history, applyExit(state, id));
-      updateHud();
+    const result = tapPiece(attempt, id);
+    if (result.kind === 'none') return;
+    attempt = result.attempt;
+    anims = anims.filter((a) => !(a.kind === 'shake' && a.id === id));
+    if (result.kind === 'exit') {
+      anims.push({ kind: 'exit', block: result.block, side: result.side, start: now });
     } else {
-      anims = anims.filter((a) => !(a.kind === 'shake' && a.id === id));
+      if (result.kind === 'out') {
+        anims = [];
+        outUntil = now + OUT_NOTE_MS;
+        setTimeout(updateHud, OUT_NOTE_MS);
+      }
       anims.push({ kind: 'shake', id, start: now });
     }
+    updateHud();
     requestFrame();
   }
 
-  function resetTo(next: History): void {
-    history = next;
+  function resetTo(next: Attempt): void {
+    attempt = next;
     anims = [];
     updateHud();
     requestFrame();
@@ -121,7 +133,7 @@ export function startGame(hud: Hud, world: World): void {
     const reduced = motion.matches;
     anims = anims.filter((a) => now - a.start < (a.kind === 'exit' ? EXIT_MS : reduced ? PULSE_MS : SHAKE_MS));
     const draws: Draw[] = [];
-    for (const block of current(history).blocks) {
+    for (const block of current(attempt.history).blocks) {
       const shake = anims.find((a) => a.kind === 'shake' && a.id === block.id);
       draws.push(shake ? shakeDraw(block, now - shake.start, reduced) : { block, dx: 0, dy: 0, alpha: 1, clip: false });
     }
@@ -156,7 +168,7 @@ export function startGame(hud: Hud, world: World): void {
     const t = elapsed / SHAKE_MS;
     const offset = SHAKE_PX * Math.sin(t * Math.PI * 6) * (1 - t);
     // Shake toward the rail it wants to reach.
-    const side = exitSide(current(history), block);
+    const side = exitSide(current(attempt.history), block);
     const vertical = side === 'top' || side === 'bottom';
     return { block, dx: vertical ? 0 : offset, dy: vertical ? offset : 0, alpha: 1, clip: false };
   }
@@ -170,7 +182,7 @@ export function startGame(hud: Hud, world: World): void {
   };
   hud.canvas.addEventListener('pointerdown', (e) => {
     const { x, y } = pointAt(e);
-    const targets = current(history).blocks.map((block) => ({
+    const targets = current(attempt.history).blocks.map((block) => ({
       id: block.id,
       rects: blockCellRects(layout, block),
       centre: blockCentre(layout, block),
@@ -187,8 +199,11 @@ export function startGame(hud: Hud, world: World): void {
   });
   hud.canvas.addEventListener('pointercancel', (e) => downs.delete(e.pointerId));
 
-  hud.undo.addEventListener('click', () => resetTo(undo(history)));
-  hud.restart.addEventListener('click', () => resetTo(restart(history)));
+  hud.undo.addEventListener('click', () => resetTo(undoAttempt(attempt)));
+  hud.restart.addEventListener('click', () => {
+    outUntil = 0;
+    resetTo(restartAttempt(attempt));
+  });
   hud.next.addEventListener('click', () => loadLevel(levelIndex + 1));
   window.addEventListener('resize', relayout);
 

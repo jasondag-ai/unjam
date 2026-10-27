@@ -99,7 +99,7 @@ function pickKinds(p: SearchParams, rand: () => number): Kind[] | null {
 }
 
 function build(p: SearchParams, rails: Rails, kinds: readonly Kind[], rand: () => number): State | null {
-  let state: State = { rows: p.rows, cols: p.cols, rails, blocks: [], moves: 0 };
+  let state: State = { rows: p.rows, cols: p.cols, rails, blocks: [] };
   const cap = Math.ceil(p.pieces / COLOURS.length) + 1;
   const used = new Map<Colour, number>();
   const taken = new Set<string>();
