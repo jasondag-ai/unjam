@@ -8,7 +8,8 @@
 - **Job 004 density curve: done.**
 - **Job 005 grid grows: done.**
 - **Job 009 GitHub Pages: live** at https://jasondag-ai.github.io/unjam/.
-- **Job 010 match the reference: built and released** (version and build id in the job 010 section).
+- **Job 010 match the reference: done.**
+- **Job 011 late band and deadlock: built and released** (see the job 011 section).
 
 ## What exists
 - `src/engine/types.ts` — Cell, Block, Gate, State, Slides.
@@ -221,11 +222,33 @@ middle 7x7, late 8x8. Job 003 mix applies to middle and late. Supersedes decisio
 43. "3 strikes: level restarted" shows for 1.6 s after the third strike, so the reset is not a
     surprise. Text only; no art change.
 
+## Job 011: late band and deadlock (2026-10-27)
+Jason: 4 to 8 free on middle boards accepted, no stronger search. Rule 7 kept, reworded (the solver
+decides solvability and what a hint points at). Mostly dominoes at reference density is correct.
+- Rule 7 reworded in STANDING_RULES.md.
+- Deadlock: engine `isStuck`; `tap` returns `stuck` with no strike; HUD "Stuck: no piece can
+  leave", footer button reads Restart (`#action`, was `#next`); status line wraps at 375 px.
+  Checked in the browser with a test board swapped in by Playwright (not in the repo).
+- FINDING: taps alone can never strand a board. An exit only empties cells, so a free piece stays
+  free whatever else leaves first, and every level is built to clear by taps. A new test plays
+  every level in 20 random orders. Deadlock needs slides (drag input).
+- Late band: levels 11-15 on 9x11, pieces 32, 34, 36, 38, 40; fill 86, 87, 89, 90, 91 percent;
+  dominoes over half. Levels 1-10 unchanged (generator output identical).
+- Rule 2 at 9 wide: 33 px cells on a 375 px phone (35 px on 390), above the 28 px floor; no cap.
+- Browser check (iPhone size): all 15 levels cleared by taps; no slow frames during play with 40
+  pieces (one 33 ms frame right after a level loads); no errors.
+
+## Job 011 decisions and findings
+44. Late fill stops at 91 percent (40 pieces in 90 cells): the reverse search finds no board at 92
+    percent or more. Inside the 85-95 band; not a stronger search, per item 1.
+45. A tap on a stuck board does nothing and costs nothing; Restart (header or footer) brings the
+    level back with no strikes.
+46. Colours on dense boards drift toward their own rail (amber top, violet bottom, mint left, cyan
+    right), because each piece is placed where its lane to its rail is clear. Not changed.
+
 ## Needs from Jason
-- Open the live link, play a middle level (6 to 10), try three bad taps and a slide-off.
-- Free at start on middle boards (decision 41): accept 4 to 8, or ask for a stronger search to
-  hold 1 to 2.
-- Rule 7 still says par comes from the solver; job 010 dropped par. Keep it for later or remove?
+- Play level 15 on the phone: does it read like the reference?
+- Decision 46: colour drift toward each rail on dense boards. Leave it, or mix colours more?
 
 ## Next step
 - On Jason's word: next job.
