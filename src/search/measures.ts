@@ -106,7 +106,11 @@ export interface Clumping {
   readonly random: number;
 }
 
-/** Job 012: do colours clump? Compare touching same-colour pairs with a random deal. */
+/**
+ * Job 012: do colours clump? Compare touching same-colour pairs with a random
+ * deal. Pieces of one shape group (job 014) are meant to touch, so those pairs
+ * are left out.
+ */
 export function clumping(s: State): Clumping {
   const owner = new Map<string, Block>();
   for (const b of s.blocks) for (const c of cellsOf(b)) owner.set(`${c.row},${c.col}`, b);
@@ -114,7 +118,7 @@ export function clumping(s: State): Clumping {
   for (const b of s.blocks) {
     for (const c of cellsOf(b)) {
       for (const o of [owner.get(`${c.row},${c.col + 1}`), owner.get(`${c.row + 1},${c.col}`)]) {
-        if (o && o !== b) pairs.set([b.id, o.id].sort().join(' '), o.colour === b.colour);
+        if (o && o !== b && !(b.group && o.group === b.group)) pairs.set([b.id, o.id].sort().join(' '), o.colour === b.colour);
       }
     }
   }

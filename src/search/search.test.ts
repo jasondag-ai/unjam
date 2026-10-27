@@ -11,6 +11,7 @@ const params: SearchParams = {
   pieces: 8,
   cells: 17,
   kinds: ['M', 'D', 'I3', 'L3', 'I4', 'L4'],
+  groups: [],
   sizeWeights: { 1: 1, 2: 4, 3: 3, 4: 1 },
   smallShare: 0.6,
   colourShare: [0.2, 0.3],
