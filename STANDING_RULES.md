@@ -39,3 +39,8 @@ is checked against all of them.
 17. Commit at every gate. Never leave the live link broken.
 18. No new dependency without a one-line reason in the
     commit message.
+19. The cancel gesture. A tap commits on finger lift, on the
+    piece it started on; sliding the finger off before
+    lifting cancels it at no cost. With strikes in play this
+    keeps the game fair. When drag input lands, do not drop
+    it: flag the conflict and ask.

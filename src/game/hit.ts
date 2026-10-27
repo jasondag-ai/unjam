@@ -41,3 +41,19 @@ export function hitTest(targets: readonly Target[], x: number, y: number, cell: 
   }
   return best;
 }
+
+/**
+ * Rule 19, the cancel gesture. A tap commits on finger lift, and only on the
+ * piece it started on: lift anywhere that resolves to another piece, or to
+ * nothing, and the tap is cancelled at no cost.
+ */
+export function tapOnRelease(
+  targets: readonly Target[],
+  downId: string | null,
+  x: number,
+  y: number,
+  cell: number,
+): string | null {
+  if (downId === null) return null;
+  return hitTest(targets, x, y, cell) === downId ? downId : null;
+}

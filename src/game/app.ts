@@ -13,7 +13,7 @@ import {
   type Side,
 } from '../engine';
 import type { World } from '../levels/types';
-import { hitTest } from './hit';
+import { hitTest, tapOnRelease, type Target } from './hit';
 import { blockCellRects, blockCentre, blockRect, computeLayout, type Layout } from './layout';
 import { Renderer, type Draw } from './render';
 
@@ -23,8 +23,6 @@ const SHAKE_PX = 4;
 const PULSE_MS = 240;
 /** How long "3 strikes" stays up after the level restarts. */
 const OUT_NOTE_MS = 1600;
-/** A pointer that moves further than this is not a tap. */
-const TAP_SLOP = 12;
 
 type Anim =
   | { kind: 'exit'; block: Block; side: Side; start: number }
@@ -173,29 +171,30 @@ export function startGame(hud: Hud, world: World): void {
     return { block, dx: vertical ? 0 : offset, dy: vertical ? offset : 0, alpha: 1, clip: false };
   }
 
-  // Input. The block is chosen where the pointer went down; a release close
-  // to that point is a tap. Each pointer is tracked, so two fingers chain.
-  const downs = new Map<number, { id: string | null; x: number; y: number }>();
+  // Input. The piece is chosen where the finger goes down; the tap commits on
+  // lift only if the finger is still on that piece (rule 19: sliding off
+  // cancels at no cost). Each pointer is tracked, so two fingers chain.
+  const downs = new Map<number, string | null>();
   const pointAt = (e: PointerEvent) => {
     const rect = hud.canvas.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
-  hud.canvas.addEventListener('pointerdown', (e) => {
-    const { x, y } = pointAt(e);
-    const targets = current(attempt.history).blocks.map((block) => ({
+  const targets = (): Target[] =>
+    current(attempt.history).blocks.map((block) => ({
       id: block.id,
       rects: blockCellRects(layout, block),
       centre: blockCentre(layout, block),
     }));
-    downs.set(e.pointerId, { id: hitTest(targets, x, y, layout.cell), x, y });
+  hud.canvas.addEventListener('pointerdown', (e) => {
+    const { x, y } = pointAt(e);
+    downs.set(e.pointerId, hitTest(targets(), x, y, layout.cell));
   });
   hud.canvas.addEventListener('pointerup', (e) => {
-    const down = downs.get(e.pointerId);
+    const downId = downs.get(e.pointerId) ?? null;
     downs.delete(e.pointerId);
-    if (!down?.id) return;
     const { x, y } = pointAt(e);
-    if (Math.hypot(x - down.x, y - down.y) > TAP_SLOP) return;
-    tap(down.id, performance.now());
+    const id = tapOnRelease(targets(), downId, x, y, layout.cell);
+    if (id) tap(id, performance.now());
   });
   hud.canvas.addEventListener('pointercancel', (e) => downs.delete(e.pointerId));
 

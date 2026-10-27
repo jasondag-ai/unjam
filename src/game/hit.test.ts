@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Block } from '../engine';
-import { hitTest, type Target } from './hit';
+import { hitTest, tapOnRelease, type Target } from './hit';
 import { blockCellRects, blockCentre, blockOutline, computeLayout, type Rect } from './layout';
 
 const one = (id: string, rect: Rect): Target => ({ id, rects: [rect], centre: { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 } });
@@ -69,5 +69,31 @@ describe('blockOutline', () => {
   it('gives a bar four corners', () => {
     const bar: Block = { id: 'B', colour: 'cyan', anchor: { row: 2, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] };
     expect(blockOutline(layout, bar)).toHaveLength(4);
+  });
+});
+
+describe('rule 19: the cancel gesture', () => {
+  // Same two pieces as above: A spans x 0..120, B is x 124..180, 60 px cells.
+  const targets = [A, B];
+
+  it('commits when the finger lifts on the piece it started on, wherever on that piece', () => {
+    expect(tapOnRelease(targets, 'A', 10, 10, 60)).toBe('A');
+    expect(tapOnRelease(targets, 'A', 115, 50, 60)).toBe('A');
+  });
+
+  it('cancels when the finger slides off onto another piece', () => {
+    expect(tapOnRelease(targets, 'A', 150, 28, 60)).toBeNull();
+  });
+
+  it('cancels when the finger slides off into open space', () => {
+    expect(tapOnRelease(targets, 'A', 60, 300, 60)).toBeNull();
+  });
+
+  it('cancels when the finger slides into the gap nearer the other piece', () => {
+    expect(tapOnRelease(targets, 'A', 122, 28, 60)).toBeNull();
+  });
+
+  it('does nothing when the finger went down on no piece', () => {
+    expect(tapOnRelease(targets, null, 10, 10, 60)).toBeNull();
   });
 });
