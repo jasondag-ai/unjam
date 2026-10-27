@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyExit, boardToText, canExit, cellsOf, isSolved, isStuck, validateState, type Block, type State } from '../engine';
 import { computeLayout } from '../game/layout';
-import { colourSpread, dependency } from '../search/measures';
+import { clumping, colourSpread, dependency } from '../search/measures';
 import { makeRandom, tapSolution } from '../search/search';
 import { BANDS, COLOUR_SHARE, type Band } from './bands';
 import { lateCandidates } from './candidates';
@@ -136,6 +136,11 @@ describe('the late band ends at reference density', () => {
 describe.each(levels.slice(5, 15).map((l) => [l.id, l.start] as const))('colours mixed: level %s', (_, s) => {
   it('keeps every colour near the board average distance from its rail, not at its rail', () => {
     for (const c of colourSpread(s)) expect(c.ratio, `${c.colour} ${c.own.toFixed(2)} vs ${c.board.toFixed(2)}`).toBeGreaterThanOrEqual(0.9);
+  });
+
+  it('does not clump: same-colour neighbours within 5 points of a random deal', () => {
+    const c = clumping(s);
+    expect(c.share, `${(100 * c.share).toFixed(0)}% vs ${(100 * c.random).toFixed(0)}%`).toBeLessThanOrEqual(c.random + 0.05);
   });
 });
 
