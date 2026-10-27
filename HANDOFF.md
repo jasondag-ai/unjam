@@ -10,7 +10,8 @@
 - **Job 009 GitHub Pages: live** at https://jasondag-ai.github.io/unjam/.
 - **Job 010 match the reference: done.**
 - **Job 011 late band and deadlock: done.**
-- **Job 012 mix the colours: built and released** (see the job 012 section).
+- **Job 012 mix the colours: done.**
+- **Job 013 tweaks: built and released** (see the job 013 section).
 
 ## What exists
 - `src/engine/types.ts` — Cell, Block, Gate, State, Slides.
@@ -277,10 +278,26 @@ decides solvability and what a hint points at). Mostly dominoes at reference den
 49. Depth was already there before mixing (levels 11-15 buried 13-30), but the deepest pieces sat
     near their own rail. Now burial is 28-37 with colours mixed.
 
+## Job 013: tweaks (2026-10-27, Jason's informal note)
+- Sky blue: the `cyan` colour is now #40B4FF (was #4CD6E6), brighter and clearly apart from mint.
+  Palette data only (world1.ts, rule 8).
+- Level picker (for testing): "Level N ▾" in the HUD is a native select; any level, any time.
+  Next level keeps it in step. No progress gating exists, so nothing is skipped.
+- Level 15 tries "a smaller piece setting" (read as the 40-piece option from job 012): 40 pieces
+  in 87 cells (88 percent), down from 39 in 90. Spread 1.14 / 0.95 / 0.97 / 0.91, 34 before the
+  most buried, chain 14, same-colour neighbours 28 percent (random 23). Levels 1-14 unchanged.
+  The fill test now rises through level 14; level 15 is the stated exception.
+
+## Backlog (Jason, job 013)
+- Option setting for tones, skins and styles. The palette is already world data (rule 8), so a
+  skin is a second palette and glyph set.
+- Sound effects, music, win screens, challenge rounds.
+- Before a public release: hide or gate the level picker.
+
 ## Needs from Jason
-- Play level 15 on the phone: do the colours read as scattered like the reference?
-- Decision 48: 40 pieces with mixed colours top out at 88 percent. Keep level 15 at 39 pieces
-  and 91 percent, or prefer 40 pieces at 88 percent (fill would dip from level 14)?
+- "Stack / combination of blocks forming shapes" on advanced levels: pieces that are themselves L,
+  T, S, Z shapes, or boards whose pieces together form a picture (picture-shaped boards)?
+- Level 15 at 40 pieces / 88 percent: keep it, or go back to 39 / 91?
 
 ## Next step
 - On Jason's word: next job.

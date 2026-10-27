@@ -72,6 +72,7 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Job 010 match the reference: portrait boards, new curve, colour balance, strikes, cancel gesture.
 - Job 011: late band (levels 11-15), deadlock message, rule 7 reworded.
 - Job 012: colours mixed on levels 6-15; spread, clumping and depth measures.
+- Job 013: sky blue, level picker (testing only; gate before public release), level 15 at 40 pieces.
 - The look (M1, final): ground #060B14, faint grid behind the board; blocks are rounded shapes with
   a 1.5px lit border, translucent fill of the same colour and an outer glow; sky blue #40B4FF (job 013, brighter so it parts from mint; still `cyan` in code), amber
   #F2A93B, violet #7D6CF5, mint #5BE8A8; rails are glowing bars; every block carries its colour's
