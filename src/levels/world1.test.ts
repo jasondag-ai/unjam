@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyExit, boardToText, canExit, cellsOf, isSolved, isStuck, validateState, type Block, type State } from '../engine';
 import { computeLayout } from '../game/layout';
+import { colourSpread, dependency } from '../search/measures';
 import { makeRandom, tapSolution } from '../search/search';
 import { BANDS, COLOUR_SHARE, type Band } from './bands';
 import { lateCandidates } from './candidates';
@@ -123,10 +124,26 @@ describe.each(levels.slice(10, 15).map((l) => [l.id, l.start] as const))('late b
 });
 
 describe('the late band ends at reference density', () => {
-  it('level 15 is 40 pieces at 90 percent or more', () => {
+  it('level 15 is 39 pieces at 90 percent or more (40 pieces top out at 88 percent with colours mixed)', () => {
     const s = levels[14]!.start;
-    expect(s.blocks).toHaveLength(40);
+    expect(s.blocks).toHaveLength(39);
     expect(fill(s)).toBeGreaterThanOrEqual(0.9);
+  });
+});
+
+// Job 012. Ratio = a colour's average distance to its own rail against every piece's
+// distance to that rail. 1 means colour says nothing about position.
+describe.each(levels.slice(5, 15).map((l) => [l.id, l.start] as const))('colours mixed: level %s', (_, s) => {
+  it('keeps every colour near the board average distance from its rail, not at its rail', () => {
+    for (const c of colourSpread(s)) expect(c.ratio, `${c.colour} ${c.own.toFixed(2)} vs ${c.board.toFixed(2)}`).toBeGreaterThanOrEqual(0.9);
+  });
+});
+
+describe.each(levels.slice(10, 15).map((l) => [l.id, l.start] as const))('dependency depth: level %s', (_, s) => {
+  it('buries a piece behind three or more others, as a late board must', () => {
+    const d = dependency(s);
+    expect(d.buried).toBeGreaterThanOrEqual(3);
+    expect(d.chain).toBeGreaterThanOrEqual(3);
   });
 });
 

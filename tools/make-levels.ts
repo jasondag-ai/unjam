@@ -7,10 +7,10 @@ import { searchBoard, type SearchParams } from '../src/search/search';
 
 const RAILS = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
 
-type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'tries'> & { readonly band: 'early' | 'middle' | 'late' };
+type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'tries'> & { readonly colourMix?: number } & { readonly band: 'early' | 'middle' | 'late' };
 
 // Rising steadily: 6x7 for levels 1 to 5, 8x9 for 6 to 10, 9x11 for 11 to 15.
-// Fill 36% -> 91%, pieces 8 -> 40. Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give
+// Fill 36% -> 91%, pieces 8 -> 39. Levels 6 to 15 mix colours (job 012). Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give
 // every colour 20 to 30 percent. Middle levels take the fewest free pieces
 // the search finds (it prefers fewest).
 const CURVE: readonly Plan[] = [
@@ -19,18 +19,19 @@ const CURVE: readonly Plan[] = [
   { band: 'early', pieces: 8, cells: 18, free: [2, 3], ringMax: 3, centrePull: 1, tries: 600 },
   { band: 'early', pieces: 10, cells: 19, free: [2, 2], ringMax: 4, centrePull: 1, tries: 600 },
   { band: 'early', pieces: 10, cells: 21, free: [2, 2], ringMax: 5, centrePull: 1, tries: 600 },
-  { band: 'middle', pieces: 18, cells: 47, free: [1, 26], ringMax: 30, centrePull: 0.2, tries: 800 },
-  { band: 'middle', pieces: 20, cells: 50, free: [1, 26], ringMax: 30, centrePull: 0.2, tries: 800 },
-  { band: 'middle', pieces: 22, cells: 53, free: [1, 26], ringMax: 30, centrePull: 0.2, tries: 800 },
-  { band: 'middle', pieces: 24, cells: 55, free: [1, 26], ringMax: 30, centrePull: 0.2, tries: 800 },
-  { band: 'middle', pieces: 26, cells: 57, free: [1, 26], ringMax: 30, centrePull: 0.2, tries: 800 },
-  // Late, 9x11: reference density, mostly dominoes. The search reaches about 91 percent fill
-  // at 40 pieces (92 percent and up finds no board), so the curve stops there.
-  { band: 'late', pieces: 32, cells: 85, free: [1, 40], ringMax: 36, centrePull: 0.2, tries: 300 },
-  { band: 'late', pieces: 34, cells: 86, free: [1, 40], ringMax: 36, centrePull: 0.2, tries: 300 },
-  { band: 'late', pieces: 36, cells: 88, free: [1, 40], ringMax: 36, centrePull: 0.2, tries: 300 },
-  { band: 'late', pieces: 38, cells: 89, free: [1, 40], ringMax: 36, centrePull: 0.2, tries: 300 },
-  { band: 'late', pieces: 40, cells: 90, free: [1, 40], ringMax: 36, centrePull: 0.2, tries: 300 },
+  { band: 'middle', pieces: 18, cells: 47, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
+  { band: 'middle', pieces: 20, cells: 50, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
+  { band: 'middle', pieces: 22, cells: 53, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
+  { band: 'middle', pieces: 24, cells: 55, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
+  { band: 'middle', pieces: 26, cells: 57, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
+  // Late, 9x11: reference density, mostly dominoes, colours mixed (job 012). With every colour's
+  // spread at 0.9 or more, the search reaches 91 percent at 38-39 pieces; 40 pieces top out
+  // at 88 percent (87 cells), so the curve ends at 39 pieces in 90 cells.
+  { band: 'late', pieces: 32, cells: 85, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
+  { band: 'late', pieces: 34, cells: 86, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
+  { band: 'late', pieces: 36, cells: 88, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
+  { band: 'late', pieces: 38, cells: 89, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
+  { band: 'late', pieces: 39, cells: 90, free: [1, 40], ringMax: 36, centrePull: 0.2, colourMix: 0.9, tries: 400 },
 ];
 
 const out: string[] = [
@@ -44,6 +45,7 @@ CURVE.forEach((plan, i) => {
   const { band: _, ...rest } = plan;
   const params: SearchParams = {
     ...rest,
+    colourMix: plan.colourMix ?? 0,
     rows: band.rows,
     cols: band.cols,
     kinds: band.kinds,
