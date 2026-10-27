@@ -10,7 +10,7 @@ export const world1: World = {
     ground: '#060B14',
     grid: 'rgba(140, 170, 210, 0.07)',
     frame: 'rgba(140, 170, 210, 0.22)',
-    blocks: { cyan: '#4CD6E6', amber: '#F2A93B', violet: '#7D6CF5', mint: '#5BE8A8' },
+    blocks: { cyan: '#40B4FF', amber: '#F2A93B', violet: '#7D6CF5', mint: '#5BE8A8' },
   },
   glyphs: { cyan: 'square', amber: 'triangle', violet: 'circle', mint: 'diamond' },
   rails,
