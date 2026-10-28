@@ -1,4 +1,5 @@
 import { cellsOf, type Block, type Cell, type Colour, type Rails, type Side, type State } from '../engine';
+import { notchOf, shapeClass } from './shapes';
 
 const STEP: Readonly<Record<Side, Cell>> = {
   top: { row: -1, col: 0 },
@@ -175,4 +176,49 @@ export function threads(s: State): Thread[] {
     if (walled && channel >= 2 && holds.length > 0) result.push({ id: b.id, channel, open: !inside(r, k), holds });
   }
   return result;
+}
+
+export interface Cage {
+  /** The caged piece. */
+  readonly id: string;
+  /** The U whose notch it sits in. */
+  readonly by: string;
+  /** True if the U leaves toward its opening, so it waits for this piece. */
+  readonly holdsU: boolean;
+}
+
+/**
+ * Job 019: pieces caged in a U. A piece is caged if one of its cells sits in
+ * another piece's notch (see shapes.ts notchOf): held there on three sides,
+ * it can only leave out of the opening.
+ */
+export function cages(s: State): Cage[] {
+  const owner = new Map<string, string>();
+  for (const b of s.blocks) for (const c of cellsOf(b)) owner.set(`${c.row},${c.col}`, b.id);
+  const lanes = blockers(s);
+  const result: Cage[] = [];
+  for (const u of s.blocks) {
+    const inside = new Set<string>();
+    for (const o of notchOf(u.shape)) {
+      const id = owner.get(`${u.anchor.row + o.row},${u.anchor.col + o.col}`);
+      if (id) inside.add(id);
+    }
+    for (const id of inside) result.push({ id, by: u.id, holdsU: lanes.get(u.id)!.has(id) });
+  }
+  return result;
+}
+
+export interface ShapeMix {
+  readonly pieces: number;
+  readonly singles: number;
+  /** U, S, Z, T, plus and staircase forms. */
+  readonly convoluted: number;
+  /** Bars, dominoes and L's. */
+  readonly plain: number;
+}
+
+/** Job 019: how many pieces of each class a board has. */
+export function shapeMix(s: State): ShapeMix {
+  const count = (k: string) => s.blocks.filter((b) => shapeClass(b.shape) === k).length;
+  return { pieces: s.blocks.length, singles: count('single'), convoluted: count('convoluted'), plain: count('plain') };
 }

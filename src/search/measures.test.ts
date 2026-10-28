@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { State } from '../engine';
-import { blockers, clumping, colourSpread, dependency, railDistance, threads } from './measures';
+import { blockers, cages, clumping, colourSpread, dependency, railDistance, shapeMix, threads } from './measures';
 
 const rails = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
 const bar = (id: string, colour: 'amber' | 'cyan' | 'violet' | 'mint', row: number, col: number) => ({
@@ -89,5 +89,26 @@ describe('threads', () => {
   it('needs both walls, and something behind it', () => {
     expect(threads({ ...s, blocks: s.blocks.filter((b) => b.id !== 'R') })).toEqual([]);
     expect(threads({ ...s, blocks: s.blocks.filter((b) => b.id !== 'H') })).toEqual([]);
+  });
+});
+
+describe('cages (job 019)', () => {
+  // U5 opening up at rows 2 and 3, columns 1 to 3; a single in its notch at (2, 2).
+  const u = { id: 'U', colour: 'amber' as const, anchor: { row: 2, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }] };
+  const c = { id: 'C', colour: 'amber' as const, anchor: { row: 2, col: 2 }, shape: [{ row: 0, col: 0 }] };
+
+  it('finds a piece in a U\'s notch, and whether the U waits for it', () => {
+    expect(cages({ rows: 5, cols: 5, rails, blocks: [u, c] })).toEqual([{ id: 'C', by: 'U', holdsU: true }]);
+    expect(cages({ rows: 5, cols: 5, rails, blocks: [{ ...u, colour: 'violet' }, c] })).toEqual([{ id: 'C', by: 'U', holdsU: false }]);
+  });
+
+  it('finds nothing in an empty notch or beside an L', () => {
+    expect(cages({ rows: 5, cols: 5, rails, blocks: [u] })).toEqual([]);
+    const l = { id: 'L', colour: 'amber' as const, anchor: { row: 2, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }] };
+    expect(cages({ rows: 5, cols: 5, rails, blocks: [l, { ...c, anchor: { row: 2, col: 2 } }] })).toEqual([]);
+  });
+
+  it('counts singles, convoluted forms and plain pieces', () => {
+    expect(shapeMix({ rows: 5, cols: 5, rails, blocks: [u, c, bar('B', 'cyan', 0, 0)] })).toEqual({ pieces: 3, singles: 1, convoluted: 1, plain: 1 });
   });
 });

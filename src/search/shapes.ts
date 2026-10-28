@@ -3,9 +3,10 @@ import type { Cell, Side } from '../engine';
 /** Piece kinds the board search can place. J counts as an L. */
 export type Kind =
   | 'M' | 'D' | 'I3' | 'L3' | 'I4' | 'L4' | 'J4' | 'T4' | 'S4' | 'Z4' | 'O4' | 'I5' | 'L5' | 'J5'
-  | 'V5' | 'L6' | 'J6' | 'L7';
+  | 'V5' | 'L6' | 'J6' | 'L7'
+  | 'U5' | 'U6' | 'U7' | 'T5' | 'T7' | 'X5' | 'S5' | 'Z5' | 'S7' | 'Z7' | 'W5' | 'W7';
 
-export type Family = 'L' | 'T' | 'S' | 'Z';
+export type Family = 'L' | 'T' | 'S' | 'Z' | 'U' | 'X' | 'W';
 
 const parse = (rows: readonly string[]): Cell[] =>
   rows.flatMap((line, r) => [...line].flatMap((ch, c) => (ch === '#' ? [{ row: r, col: c }] : [])));
@@ -51,6 +52,20 @@ const DRAWN: Readonly<Record<Kind, readonly string[]>> = {
   L6: ['#..', '#..', '#..', '###'],
   J6: ['..#', '..#', '..#', '###'],
   L7: ['#...', '#...', '#...', '####'],
+  // Convoluted strokes (job 019), one cell wide: U's (the notch can hold a piece), long T's, a
+  // plus, S's and Z's that double back, and staircases.
+  U5: ['#.#', '###'],
+  U6: ['#..#', '####'],
+  U7: ['#.#', '#.#', '###'],
+  T5: ['###', '.#.', '.#.'],
+  T7: ['#####', '..#..', '..#..'],
+  X5: ['.#.', '###', '.#.'],
+  S5: ['.##', '.#.', '##.'],
+  Z5: ['##.', '.#.', '.##'],
+  S7: ['..###', '..#..', '###..'],
+  Z7: ['###..', '..#..', '..###'],
+  W5: ['#..', '##.', '.##'],
+  W7: ['#...', '##..', '.##.', '..##'],
 };
 
 export const KINDS = Object.keys(DRAWN) as Kind[];
@@ -63,7 +78,14 @@ export const SIZE: Readonly<Record<Kind, number>> = Object.fromEntries(
   KINDS.map((k) => [k, parse(DRAWN[k]).length]),
 ) as Record<Kind, number>;
 
-export const FAMILY_OF: Readonly<Partial<Record<Kind, Family>>> = { L3: 'L', L4: 'L', J4: 'L', L5: 'L', J5: 'L', V5: 'L', L6: 'L', J6: 'L', L7: 'L', T4: 'T', S4: 'S', Z4: 'Z' };
+export const FAMILY_OF: Readonly<Partial<Record<Kind, Family>>> = {
+  L3: 'L', L4: 'L', J4: 'L', L5: 'L', J5: 'L', V5: 'L', L6: 'L', J6: 'L', L7: 'L',
+  T4: 'T', T5: 'T', T7: 'T', S4: 'S', S5: 'S', S7: 'S', Z4: 'Z', Z5: 'Z', Z7: 'Z',
+  U5: 'U', U6: 'U', U7: 'U', X5: 'X', W5: 'W', W7: 'W',
+};
+
+/** Job 019: U, S, Z, T, plus and staircase forms. Bars, dominoes and L's are plain. */
+export const CONVOLUTED: ReadonlySet<Family> = new Set(['U', 'S', 'Z', 'T', 'X', 'W']);
 
 const BY_KEY = new Map<string, Kind>(KINDS.flatMap((k) => SHAPES[k].map((s) => [shapeKey(s), k] as const)));
 
@@ -72,10 +94,45 @@ export function kindOf(shape: readonly Cell[]): Kind | null {
   return BY_KEY.get(shapeKey(shape)) ?? null;
 }
 
-/** L, T, S or Z, or null for bars, squares, dominoes and single cells. */
+/** L, T, S, Z, U, X (plus) or W (staircase), or null for bars, squares, dominoes and single cells. */
 export function familyOf(shape: readonly Cell[]): Family | null {
   const kind = kindOf(shape);
   return kind ? (FAMILY_OF[kind] ?? null) : null;
+}
+
+/** Job 019's shape mix: a single cell, a convoluted stroke, or a plain bar, domino or L. */
+export function shapeClass(shape: readonly Cell[]): 'single' | 'convoluted' | 'plain' {
+  if (shape.length === 1) return 'single';
+  const family = familyOf(shape);
+  return family && CONVOLUTED.has(family) ? 'convoluted' : 'plain';
+}
+
+/** True if any part of the shape is two cells thick: a 2x2 square inside it (job 019 allows none). */
+export function isThick(shape: readonly Cell[]): boolean {
+  const has = new Set(shape.map((c) => `${c.row},${c.col}`));
+  return shape.some((c) => has.has(`${c.row},${c.col + 1}`) && has.has(`${c.row + 1},${c.col}`) && has.has(`${c.row + 1},${c.col + 1}`));
+}
+
+/**
+ * A shape's notch (job 019): cells outside it that lie between two of its
+ * cells in the same row or the same column, as inside a U. A piece in the
+ * notch is caged: held on three sides, and in the U's way toward its opening.
+ */
+export function notchOf(shape: readonly Cell[]): Cell[] {
+  const has = new Set(shape.map((c) => `${c.row},${c.col}`));
+  const out: Cell[] = [];
+  const rows = shape.map((c) => c.row);
+  const cols = shape.map((c) => c.col);
+  for (let row = Math.min(...rows); row <= Math.max(...rows); row++) {
+    for (let col = Math.min(...cols); col <= Math.max(...cols); col++) {
+      if (has.has(`${row},${col}`)) continue;
+      const inRow = shape.filter((c) => c.row === row).map((c) => c.col);
+      const inCol = shape.filter((c) => c.col === col).map((c) => c.row);
+      const between = (xs: number[], x: number) => xs.some((a) => a < x) && xs.some((a) => a > x);
+      if (between(inRow, col) || between(inCol, row)) out.push({ row, col });
+    }
+  }
+  return out;
 }
 
 /**

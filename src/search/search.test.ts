@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { canExit, cellsOf, validateState, type Rails } from '../engine';
 import { colourSpread } from './measures';
 import { colourQuota, makeRandom, searchBoard, tapSolution, type SearchParams } from './search';
-import { familyOf, kindOf, SHAPES } from './shapes';
+import { familyOf, isThick, KINDS, kindOf, notchOf, shapeClass, SHAPES } from './shapes';
 
 const RAILS: Rails = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' };
 const params: SearchParams = {
@@ -38,6 +38,48 @@ describe('shape catalogue', () => {
     expect(kindOf([{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }])).toBe('I3');
     expect(familyOf([{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }])).toBe('T');
     expect(familyOf([{ row: 0, col: 0 }, { row: 0, col: 1 }])).toBeNull();
+  });
+
+  it('gives every kind its own shapes, in every rotation (job 019)', () => {
+    const seen = new Map<string, string>();
+    for (const kind of KINDS) {
+      for (const shape of SHAPES[kind]) {
+        const k = shape.map((c) => `${c.row},${c.col}`).join(' ');
+        expect(seen.get(k), `${kind} repeats ${seen.get(k)}`).toBeUndefined();
+        seen.set(k, kind);
+      }
+    }
+  });
+
+  it('draws every piece but the square as one-cell-wide strokes (job 019)', () => {
+    for (const kind of KINDS) for (const shape of SHAPES[kind]) expect(isThick(shape), kind).toBe(kind === 'O4');
+  });
+
+  it('never touches itself only at a corner, so the outline traces as one ring', () => {
+    for (const kind of KINDS) {
+      for (const shape of SHAPES[kind]) {
+        const has = (r: number, c: number) => shape.some((x) => x.row === r && x.col === c);
+        for (const { row: r, col: c } of shape) {
+          expect(has(r + 1, c + 1) && !has(r, c + 1) && !has(r + 1, c), kind).toBe(false);
+          expect(has(r + 1, c - 1) && !has(r, c - 1) && !has(r + 1, c), kind).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('gives U\'s a notch and nothing else (job 019)', () => {
+    for (const kind of KINDS) {
+      for (const shape of SHAPES[kind]) expect(notchOf(shape).length > 0, kind).toBe(familyOf(shape) === 'U');
+    }
+    expect(notchOf(SHAPES.U5[0]!)).toHaveLength(1);
+    expect(notchOf(SHAPES.U6[0]!)).toHaveLength(2);
+    expect(notchOf(SHAPES.U7[0]!)).toHaveLength(2);
+  });
+
+  it('sorts shapes into singles, convoluted forms and plain bars and L\'s', () => {
+    expect(shapeClass(SHAPES.M[0]!)).toBe('single');
+    for (const k of ['U5', 'S7', 'Z5', 'T4', 'X5', 'W7'] as const) expect(shapeClass(SHAPES[k][0]!), k).toBe('convoluted');
+    for (const k of ['D', 'I5', 'L3', 'L7'] as const) expect(shapeClass(SHAPES[k][0]!), k).toBe('plain');
   });
 });
 
