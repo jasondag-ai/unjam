@@ -54,6 +54,26 @@ export interface SearchParams {
    * 10 were built that way and stay as they are).
    */
   readonly dealShares?: boolean;
+  /** Job 018: at least this many long bars (4 or 5 cells) outside the shape groups, as landmarks. */
+  readonly bars?: number;
+  /**
+   * Job 018: a build may stop short of `pieces` and `cells` once this many
+   * cells are filled (needs dealShares). Pieces that no longer fit are left
+   * out, so the board's count is what fits.
+   */
+  readonly minCells?: number;
+  /**
+   * Place each piece where it blocks the most free pieces (default). Job 018
+   * turns this off for 12x15 boards without single cells: it walls in the
+   * middle early and the last pieces find no lane.
+   */
+  readonly blockFirst?: boolean;
+  /**
+   * Same-colour neighbours allowed, against what a random deal of the
+   * board's colours gives: +0.05 (job 012, the default) is within five
+   * points; job 018 asks for below random, a negative number.
+   */
+  readonly clumpMargin?: number;
   readonly tries: number;
   readonly seed: number;
 }
@@ -106,7 +126,11 @@ export function searchBoard(params: SearchParams, rails: Rails): SearchResult | 
     if (!kinds) continue;
     const shares = colourQuota(params, rand)!;
     const built = build(params, rails, kinds, shares, rand);
-    const state = built && params.colourMix > 0 ? mixColours(built.state, params.colourMix, rand, built.fixed, params.dealShares ? shares : null) : built?.state;
+    // A build that stopped early (minCells) deals shares for the pieces it has.
+    const dealt = built && built.state.blocks.length < params.pieces ? colourQuota({ ...params, pieces: built.state.blocks.length }, rand) : shares;
+    const state = built && dealt && params.colourMix > 0
+      ? mixColours(built.state, params.colourMix, rand, built.fixed, params.dealShares ? dealt : null, params.clumpMargin ?? 0.05)
+      : built?.state;
     if (!state || !meets(params, state)) continue;
     const pinned = state.blocks.filter((b) => blockerCount(state, b) >= 2).length;
     const rank = [largestGap(state), freeCount(state), -pinned];
@@ -159,9 +183,13 @@ function pickKinds(params: SearchParams, rand: () => number): Kind[] | null {
     return sizes.at(-1)!;
   };
   const picked = Array.from({ length: p.pieces }, draw);
+  // Long bars (job 018) are the first few picks, held at 4 or 5 cells.
+  const bars = Math.min(p.bars ?? 0, picked.length);
+  for (let i = 0; i < bars; i++) picked[i] = picked[i]! >= 4 ? picked[i]! : 4;
   let sum = picked.reduce((n, size) => n + size, 0);
   for (let guard = 0; sum !== p.cells && guard < 10000; guard++) {
-    const i = Math.floor(rand() * picked.length);
+    const i = bars + Math.floor(rand() * (picked.length - bars));
+    if (i >= picked.length) break;
     const next = sizes[sizes.indexOf(picked[i]!) + (sum < p.cells ? 1 : -1)];
     if (next === undefined) continue;
     sum += next - picked[i]!;
@@ -169,13 +197,14 @@ function pickKinds(params: SearchParams, rand: () => number): Kind[] | null {
   }
   if (sum !== p.cells) return null;
   if (picked.filter((n) => n === 2 || n === 3).length < p.smallShare * p.pieces) return null;
-  return picked.map((size) => {
-    const options = p.kinds.filter((k) => SIZE[k] === size);
+  return picked.map((size, i) => {
+    const options = p.kinds.filter((k) => SIZE[k] === size && (i >= bars || BAR_KINDS.includes(k)));
     return options[Math.floor(rand() * options.length)]!;
   });
 }
 
 const key = (row: number, col: number) => row * 100 + col;
+const BAR_KINDS: readonly Kind[] = ['I4', 'I5'];
 
 /**
  * Place the pieces in reverse. Works on the set of taken cells: a spot is
@@ -207,6 +236,7 @@ function build(
   let threadsLeft = p.threads ?? 0;
   let closedLeft = p.closedThreads ?? 0;
   const channelLength = p.threadChannel ?? 2;
+  const singles = p.kinds.some((k) => SIZE[k] === 1);
   const reserved = new Set<number>();
   const flanks = new Set<number>();
   const fixed = new Set<string>();
@@ -264,6 +294,7 @@ function build(
     unit: { kind: Kind } | { motif: MotifName };
     blocked: number;
     walls: number;
+    holes: number;
     score: number;
     thread: ReturnType<typeof channel>;
   };
@@ -280,7 +311,23 @@ function build(
       const blocked = free.filter((path) => cells.some((c) => path.has(key(c.row, c.col)))).length;
       // Wall in the threads' channels.
       const walls = flanks.size === 0 ? 0 : cells.filter((c) => flanks.has(key(c.row, c.col))).length;
-      return { blocked, walls, base: touching * 0.5 - spread * p.centrePull };
+      // Without single cells (job 018), an empty cell cut off from every other is a hole no piece
+      // can fill; count the ones this spot would make.
+      let holes = 0;
+      if (!singles) {
+        const own = new Set(cells.map((c) => key(c.row, c.col)));
+        const open = (r: number, c: number) => inside(r, c) && !taken.has(key(r, c)) && !reserved.has(key(r, c)) && !own.has(key(r, c));
+        const seen = new Set<number>();
+        for (const c of cells) {
+          for (const d of Object.values(STEP)) {
+            const r = c.row + d.row, k = c.col + d.col;
+            if (!open(r, k) || seen.has(key(r, k))) continue;
+            seen.add(key(r, k));
+            if (!Object.values(STEP).some((e) => open(r + e.row, k + e.col))) holes++;
+          }
+        }
+      }
+      return { blocked, walls, holes, base: touching * 0.5 - spread * p.centrePull };
     };
     for (const kind of new Set(remaining)) {
       for (const shape of SHAPES[kind]) {
@@ -289,7 +336,7 @@ function build(
             const cells = shape.map((o) => ({ row: row + o.row, col: col + o.col }));
             if (cells.some((c) => !inside(c.row, c.col) || taken.has(key(c.row, c.col)) || reserved.has(key(c.row, c.col)))) continue;
             if (ring + cells.filter(onRing).length > p.ringMax) continue;
-            const { blocked, walls, base } = judge(cells);
+            const { blocked, walls, holes, base } = judge(cells);
             for (const colour of COLOURS) {
               if (!p.dealShares && (used.get(colour) ?? 0) >= quota.get(colour)!) continue;
               const path = pathOf(cells, STEP[sideOf.get(colour)!]);
@@ -297,7 +344,7 @@ function build(
               const thread = threading ? channel(cells, STEP[sideOf.get(colour)!], path, blocked) : null;
               // The chance term is drawn per valid colour, as before groups existed, so boards
               // without groups come out exactly as they did.
-              options.push({ pieces: [{ cells, anchor: { row, col }, shape, path }], colour, unit: { kind }, blocked, walls, score: base + rand() * 2, thread });
+              options.push({ pieces: [{ cells, anchor: { row, col }, shape, path }], colour, unit: { kind }, blocked, walls, holes, score: base + rand() * 2, thread });
             }
           }
         }
@@ -311,7 +358,7 @@ function build(
             const all = pieces.flat();
             if (all.some((c) => !inside(c.row, c.col) || taken.has(key(c.row, c.col)) || reserved.has(key(c.row, c.col)))) continue;
             if (ring + all.filter(onRing).length > p.ringMax) continue;
-            const { blocked, walls, base } = judge(all);
+            const { blocked, walls, holes, base } = judge(all);
             for (const colour of COLOURS) {
               if (!p.dealShares && (used.get(colour) ?? 0) + turn.length > quota.get(colour)!) continue;
               const side = sideOf.get(colour)!;
@@ -326,21 +373,30 @@ function build(
                 for (const c of pieces[i]!) down.add(key(c.row, c.col));
               }
               if (ordered.length < order.length) continue;
-              options.push({ pieces: ordered, colour, unit: { motif }, blocked, walls, score: base + rand() * 2, thread: null });
+              options.push({ pieces: ordered, colour, unit: { motif }, blocked, walls, holes, score: base + rand() * 2, thread: null });
             }
           }
         }
       }
     }
-    if (options.length === 0) return null;
+    if (options.length === 0) {
+      // Job 018: a board already full enough may stop here, leaving out the pieces that no longer
+      // fit, once its threads are down and its groups placed.
+      const filled = taken.size;
+      if (p.minCells !== undefined && filled >= p.minCells && threadsLeft === 0 && groupsLeft.length === 0) break;
+      return null;
+    }
     // Block as many free pieces as possible; among those spots, touch
     // neighbours and keep to the middle, with a little chance. A thread's spot
     // comes first while one is still to plant, then walls for its channel.
     const planting = options.some((o) => o.thread);
     const walling = options.some((o) => o.walls > 0);
     const pool = planting ? options.filter((o) => o.thread) : walling ? options.filter((o) => o.walls > 0) : options;
-    const most = Math.max(...pool.map((o) => o.blocked));
-    const best = pool.filter((o) => o.blocked === most).sort((a, b) => b.score - a.score);
+    // Spots that strand no hole first (boards without single cells), then, unless
+    // blockFirst is off, the ones blocking the most free pieces.
+    const fewest = Math.min(...pool.map((o) => o.holes));
+    const most = p.blockFirst === false ? 0 : Math.max(...pool.filter((o) => o.holes === fewest).map((o) => o.blocked));
+    const best = pool.filter((o) => o.holes === fewest && o.blocked >= most).sort((a, b) => b.score - a.score);
     const pick = best[Math.floor(rand() * Math.min(3, best.length))]!;
     const group = 'motif' in pick.unit ? `g${++groupCount}` : undefined;
     if (pick.thread) {
@@ -375,9 +431,9 @@ function build(
  * nothing about position, then repair by swapping two pieces' colours
  * (shares stay the same). First, swaps that leave fewer pieces stuck while
  * every colour keeps the spread target. Then, swaps that break up
- * same-colour neighbours, down to what a random deal gives plus five
- * points, keeping the board clearable and the spread. Null if it cannot get
- * there.
+ * same-colour neighbours, down to what a random deal gives plus the margin
+ * (five points by default; below random for job 018), keeping the board
+ * clearable and the spread. Null if it cannot get there.
  *
  * Positions never change here, so each piece's blockers toward each rail,
  * its distance to each rail and which pieces touch are worked out once.
@@ -393,6 +449,7 @@ function mixColours(
   rand: () => number,
   fixed: ReadonlySet<string>,
   shares: ReadonlyMap<Colour, number> | null,
+  clumpMargin: number,
 ): State | null {
   const sides = (Object.keys(s.rails) as Side[]);
   const sideOf = new Map(sides.map((side) => [s.rails[side], side] as const));
@@ -500,7 +557,7 @@ function mixColours(
     units.filter((u) => u.length === 1 && !pinned[u[0]!]).forEach((u, k) => (colours[u[0]!] = rest[k]!));
   }
   const counts = [...new Set(colours)].map((c) => colours.filter((x) => x === c).length);
-  const clumpMax = counts.reduce((t, k) => t + k * (k - 1), 0) / (n * (n - 1)) + 0.05;
+  const clumpMax = counts.reduce((t, k) => t + k * (k - 1), 0) / (n * (n - 1)) + clumpMargin;
   /**
    * Trade colours between the units holding pieces a and b; a group may trade
    * with as many single pieces of the other colour (b plus others picked at
@@ -623,9 +680,9 @@ export function blockerCount(s: State, block: Block): number {
   return ids.size;
 }
 
-/** Name pieces A to Z, then a to z, in reading order. */
+/** Name pieces A to Z, a to z, 0 to 9, then Greek letters, in reading order: one character each. */
 function relabel(s: State): State {
-  const names = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  const names = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ΓΔΘΛΞΠΣΦΨΩαβγδεζηθικλμνξπρστφχψω'];
   if (s.blocks.length > names.length) throw new Error(`More than ${names.length} pieces`);
   const order = [...s.blocks].sort((a, b) => a.anchor.row - b.anchor.row || a.anchor.col - b.anchor.col);
   return { ...s, blocks: order.map((b, i) => ({ ...b, id: names[i]! })) };
