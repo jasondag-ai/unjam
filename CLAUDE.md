@@ -17,15 +17,17 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
   | Band | Grid (wide x tall) | Pieces | Fill |
   | early | 6x7 | 6 to 10 | 35-50% |
   | middle | 10x12 | 30 to 43 | 65-80% |
-  | late | 12x15 | 60 to 70 | 85-90% | (job 018: levels 11-20, no singles at 25 px) |
+  | late | 12x15 | 44 to 52 | 85-90% | (job 019: levels 11-20, convoluted strokes, singles) |
 - Every colour gets 20 to 30 percent of each board's pieces.
-- Pieces are mostly 2 and 3 cells, with some 4 and 5 cell bars and L shapes. Single cells only
-  where a cell is 30 px or more on a 375 px phone (job 018); cells never under 24 px, boards never
-  over 14 wide.
+- Early and middle pieces are mostly 2 and 3 cells, with some 4 and 5 cell bars and L shapes.
+  Singles wherever the press highlight is on and a cell is 24 px or more (rule 2, job 019); cells
+  never under 24 px, boards never over 14 wide. No piece is two cells thick (job 019).
 - Early boards keep 2 to 3 free pieces at the start and cluster in the middle. Middle and late
   boards have no free-at-start target (4 to 8 on middle boards is accepted, job 011); the search
   takes the board with the smallest empty patch. Do not build a stronger search for free counts.
-- Late band (job 018): levels 11 to 20 on 12x15, dominoes and threes, two nests of L's (7/5/3
+- Late band (job 019): levels 11 to 20 on 12x15, 48 pieces: 15-25% singles, one-cell-wide U, S,
+  Z, T, plus and staircase strokes up to 7 cells, dominoes and threes; at least one piece caged
+  in a U's notch that the U waits for (`cages()`); two nests of L's (7/5/3
   and 5/3, one colour each) and two long bars as landmarks, and two threaded pieces: a small piece
   whose lane is a walled one-cell channel of 4+ cells and which holds another (`threads()` in
   measures.ts); at least one channel closed at its outer end by a piece (hidden from the edge).
@@ -81,6 +83,7 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Job 015: legibility is the difficulty: many small late pieces, threads, palette contrast.
 - Job 016: real channels (4+ cells, one hidden from the edge), sky blue back.
 - Job 018: press highlight; grid 10x12 / 12x15; levels 16-20; same-colour neighbours below random.
+- Job 019: singles back (rule 2), skinny convoluted strokes, caged pieces; peel colouring.
 - The look (M1, final): ground #060B14, faint grid behind the board; blocks are rounded shapes with
   a 1.5px lit border, translucent fill of the same colour and an outer glow; sky blue #40B4FF (`cyan` in code), amber
   #F2A93B, violet #B3A3FF, mint #4ABF6A (job 016: contrast 8.4-9.9 on the ground, apart in lightness); rails are glowing bars; every block carries its colour's
@@ -97,6 +100,6 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 ## Commands
 - `npm test` — engine typecheck guard, full typecheck, Vitest.
 - `npx tsx src/engine/demo.ts` (or `npm run demo`) — scripted solve in the terminal.
-- `npm run levels` — regenerate levels 1 to 20 from the curve in `tools/make-levels.ts` (about 25 min).
+- `npm run levels` — regenerate levels 1 to 20 from the curve in `tools/make-levels.ts`, one process per level (about 70 min).
 - `npm run dev` — Vite dev server on the local network, fixed port 5290 (5173-5181 belong to other projects).
 - `npm run release` — deploy (see Deploy). `npm run check-live` — is it live?

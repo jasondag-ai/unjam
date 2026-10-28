@@ -384,10 +384,35 @@ pieces making bigger blocks), then "let's try and see how it looks" to the propo
 62. Late piece counts no longer have to rise every level; fill does (85 -> 90 percent).
 63. Levels 1-5 left unmixed: job 018 rebuilt only middle and late; asking before changing them.
 
+## Job 019: skinny and convoluted shapes (2026-10-28)
+- Singles back at 25 px. Rule 2 now: singles wherever the press highlight is on and a cell is
+  24 px or more. Late boards are 21-25 percent singles (band asks 15-25).
+- New one-cell-wide strokes (shapes.ts): U5 U6 U7, T5 T7, plus (X5), S5 Z5 S7 Z7, staircases W5
+  W7. No piece is two cells thick (test); none touches itself only at a corner (outline test).
+- Engine needed no change: a cell owned by another piece always blocks, so a U's sweep toward its
+  opening includes the notch. Tests in src/engine/cage.test.ts.
+- Measures: `cages()` (a piece in another's notch; `holdsU` when the U leaves toward its opening)
+  and `shapeMix()`. Every late board has at least one U waiting on its caged piece.
+- Late band: 48 pieces, 153-162 cells (85-90 percent), average about 3.3 cells; two nests, two
+  long bars, two 4-cell channels (one closed) kept.
+- Search: `kindWeights`, `singleShare`, `cages` (a placed U's notch gets the next piece, both
+  colours kept), `sizePull` (big strokes go down first), `landing` (keep an edge in reach for every
+  piece still to place), `peel` (deal colours by clearing the board in thought, then anneal spread
+  and clumping without ever leaving a piece stuck). All off by default: levels 1-10 byte-identical.
+- `npm run levels` runs one process per level (tools/make-levels.sh): about 67 minutes, bound by
+  level 20 (8,300 tries; about one try in 2,000 passes the colour mix at 90 percent).
+
+## Job 019 decisions
+64. Piece count 48 on every late level (it was 66-70): bigger strokes take the cells.
+65. Spread stays at 0.9 even though it is what makes these boards rare; the fix was more tries,
+    not a looser mix (CLAUDE.md: never loosen the mix).
+66. Convoluted share 25-35 percent: higher weights failed the colour mix more often.
+67. The cage pair shares a colour (the caged piece can only leave out of the opening).
+
 ## Needs from Jason
-- Play level 20 on the phone: hard to read? Does pressing show the piece, and do you hit the one
-  you meant at 25 px?
-- Should levels 1-5 also get same-colour neighbours below random?
+- Play level 20: new shapes, singles you can hit, the U cages.
+- Want more convoluted pieces than 25-35 percent? It costs search time (see decision 66).
+- Still open from job 018: should levels 1-5 also get same-colour neighbours below random?
 
 ## Next step
 - On Jason's word: next job.
