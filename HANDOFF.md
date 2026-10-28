@@ -319,8 +319,35 @@ pieces making bigger blocks), then "let's try and see how it looks" to the propo
 52. Piece count drops from 26 (level 10) to 24 (level 11): the late band uses fewer, bigger pieces.
     The never-drops test now applies inside each band.
 
+## Job 015: legibility is the difficulty (2026-10-27)
+- Late band: 34-44 pieces at 85-92 percent, mostly 1 to 3 cells with single cells, a few bars, two
+  nests of L's (nest3, nest2) as landmarks. Levels 11-15: 39/85, 40/87, 41/88, 42/90, 44/91.
+  Average piece size 2.18 -> 2.07, falling every level from 6 (2.61) to 15. Levels 1-10 unchanged.
+- Threads: `threads()` in measures.ts. A 1-3 cell piece, one cell wide across its way out, whose
+  lane is an empty channel of 2+ cells with a piece on both sides of every cell, and which holds
+  another piece. The search plants them (param `threads`), keeps the lane empty, walls it in next,
+  and mixing keeps the thread's and the held piece's colours. Two per late level, all lane 2:
+  11 L, M; 12 K, f; 13 J, g; 14 d, g; 15 S (row 4, mint), i (row 9, violet).
+- `dealShares`: late builds take any colour; mixing deals the 20-30 percent shares.
+- Palette: cyan back to #4CD6E6 (anchor), violet #7D6CF5 -> #B5A5FF, mint #5BE8A8 -> #4FC86E.
+  Contrast on #060B14: cyan 11.3, amber 9.9, violet 9.2 (was 5.0), mint 9.2 (was 12.7). OKLab
+  lightness 0.81 / 0.79 / 0.77 / 0.74: every pair differs (palette.test.ts).
+- Rule 2 amended: single cells allowed on late boards at 33 px.
+- Measures: buried 33-39, chains 12-21, same-colour neighbours 20-28 percent (random 23-24),
+  spread 0.90+. All 15 levels clear by taps in the browser; 218 tests.
+
+## Job 015 decisions and findings
+53. Cyan #4CD6E6 reverses job 013's sky blue (#40B4FF), as the job states; mint moved instead.
+54. "Roughly equal" contrast: 9.2 to 11.3 (within 1.25x); lightness still steps between colours.
+55. Late piece counts 39-44 (inside 34-44) so the average keeps falling from level 10's 2.19.
+56. Two nests, not three: a third leaves too few 2-3 cell pieces among 44.
+57. Threads come out with 2-cell lanes; longer lanes leave the 91-cell boards no room to build.
+58. Late builds use `dealShares`; with the quota held during the build, most late builds ran out
+    of spots near the end.
+
 ## Needs from Jason
-- Play levels 11 to 15 on the phone: does the late band now look like the reference?
+- Play 11 to 15 on the phone: harder to read than 10? Can you find a thread? Are the four colours
+  equally legible?
 
 ## Next step
 - On Jason's word: next job.
