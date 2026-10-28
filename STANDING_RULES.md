@@ -8,11 +8,13 @@ is checked against all of them.
    a piece's target spans at least 44 px along its longest
    side, expanded away from neighbours. Cells may be as
    small as 24 px on a 375 px phone, so a board is never
-   more than 14 wide (job 018). A single-cell piece is
-   allowed only where a cell is 30 px or larger. While a
-   finger is down, the piece it would commit to is lit. A
-   tap between two blocks resolves to the nearer block
-   centre.
+   more than 14 wide (job 018). While a finger is down, the
+   piece it would commit to is lit. The press highlight is
+   what makes a small target safe: you press, you see what
+   you have, you slide off if it is wrong. So single-cell
+   pieces are allowed wherever the press highlight is
+   active and a cell is 24 px or more (job 019). A tap
+   between two blocks resolves to the nearer block centre.
 3. The engine stays pure. No DOM, canvas, browser globals
    or timers in src/engine/.
 4. State is immutable. Moves return a new board. Undo is a
