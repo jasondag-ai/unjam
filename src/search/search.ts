@@ -1,6 +1,6 @@
 import { applyExit, canExit, cellsOf, isSolved, type Block, type Cell, type Colour, type Rails, type Side, type State } from '../engine';
-import { railDistance, threads } from './measures';
-import { MOTIF_CELLS, MOTIF_PIECES, MOTIF_TURNS, placementOrder, SHAPES, SIZE, type Kind, type MotifName } from './shapes';
+import { cages, railDistance, threads } from './measures';
+import { MOTIF_CELLS, MOTIF_PIECES, MOTIF_TURNS, notchOf, placementOrder, SHAPES, SIZE, type Kind, type MotifName } from './shapes';
 
 /** Everything that sets how hard a generated board is. */
 export interface SearchParams {
@@ -20,6 +20,10 @@ export interface SearchParams {
   readonly groups: readonly MotifName[];
   /** Relative weight of each piece size, in cells. Sizes left out are not used. */
   readonly sizeWeights: Readonly<Partial<Record<number, number>>>;
+  /** Job 019: relative weight of each kind within its size (default 1). Left out, kinds of a size are equally likely. */
+  readonly kindWeights?: Readonly<Partial<Record<Kind, number>>>;
+  /** Job 019: share of all pieces that are single cells, inclusive range. */
+  readonly singleShare?: readonly [number, number];
   /** At least this share of the pieces are 2 or 3 cells ("mostly 2 and 3"). */
   readonly smallShare: number;
   /** Each colour's share of the pieces, inclusive range. */
@@ -54,6 +58,12 @@ export interface SearchParams {
    * 10 were built that way and stay as they are).
    */
   readonly dealShares?: boolean;
+  /**
+   * Job 019: pieces caged in a U. The board must have at least this many
+   * U's leaving toward their opening with a piece in their notch, so the U
+   * waits for it (see measures.ts cages).
+   */
+  readonly cages?: number;
   /** Job 018: at least this many long bars (4 or 5 cells) outside the shape groups, as landmarks. */
   readonly bars?: number;
   /**
@@ -68,6 +78,20 @@ export interface SearchParams {
    * points; job 018 asks for below random, a negative number.
    */
   readonly clumpMargin?: number;
+  /**
+   * Job 019: deal colours by peeling the board, then polish them by
+   * annealing (see mixColours). Big interlocking strokes leave almost no
+   * single trade that keeps every piece clearable, so a random deal and
+   * plain hill climbing stall.
+   */
+  readonly peel?: boolean;
+  /** Job 019: score per cell, so big strokes go down early (tapped late) while there is room for them. */
+  readonly sizePull?: number;
+  /**
+   * Job 019: never take a spot that leaves fewer empty cells with a clear
+   * line to an edge than there are pieces still to place.
+   */
+  readonly landing?: boolean;
   readonly tries: number;
   readonly seed: number;
 }
@@ -121,7 +145,7 @@ export function searchBoard(params: SearchParams, rails: Rails): SearchResult | 
     const shares = colourQuota(params, rand)!;
     const built = build(params, rails, kinds, shares, rand);
     const state = built && params.colourMix > 0
-      ? mixColours(built.state, params.colourMix, rand, built.fixed, params.dealShares ? shares : null, params.clumpMargin ?? 0.05)
+      ? mixColours(built.state, params.colourMix, rand, built.fixed, params.dealShares ? shares : null, params.clumpMargin ?? 0.05, params.peel ?? false)
       : built?.state;
     if (!state || !meets(params, state)) continue;
     const pinned = state.blocks.filter((b) => blockerCount(state, b) >= 2).length;
@@ -177,7 +201,7 @@ function pickKinds(params: SearchParams, rand: () => number): Kind[] | null {
   const picked = Array.from({ length: p.pieces }, draw);
   // Long bars (job 018) are the first few picks, held at 4 or 5 cells.
   const bars = Math.min(p.bars ?? 0, picked.length);
-  for (let i = 0; i < bars; i++) picked[i] = picked[i]! >= 4 ? picked[i]! : 4;
+  for (let i = 0; i < bars; i++) picked[i] = picked[i]! === 5 ? 5 : 4;
   let sum = picked.reduce((n, size) => n + size, 0);
   for (let guard = 0; sum !== p.cells && guard < 10000; guard++) {
     const i = bars + Math.floor(rand() * (picked.length - bars));
@@ -189,9 +213,17 @@ function pickKinds(params: SearchParams, rand: () => number): Kind[] | null {
   }
   if (sum !== p.cells) return null;
   if (picked.filter((n) => n === 2 || n === 3).length < p.smallShare * p.pieces) return null;
+  if (p.singleShare) {
+    const share = picked.filter((n) => n === 1).length / params.pieces;
+    if (share < p.singleShare[0] || share > p.singleShare[1]) return null;
+  }
+  const weights = p.kindWeights;
   return picked.map((size, i) => {
     const options = p.kinds.filter((k) => SIZE[k] === size && (i >= bars || BAR_KINDS.includes(k)));
-    return options[Math.floor(rand() * options.length)]!;
+    if (!weights) return options[Math.floor(rand() * options.length)]!;
+    let r = rand() * options.reduce((n, k) => n + (weights[k] ?? 1), 0);
+    for (const k of options) if ((r -= weights[k] ?? 1) < 0) return k;
+    return options.at(-1)!;
   });
 }
 
@@ -231,6 +263,9 @@ function build(
   const singles = p.kinds.some((k) => SIZE[k] === 1);
   const reserved = new Set<number>();
   const flanks = new Set<number>();
+  // Cages (job 019): once a U is down leaving toward its opening, its empty notch cells, by U.
+  let cagesLeft = p.cages ?? 0;
+  const notches = new Map<number, string>();
   const fixed = new Set<string>();
   let ring = 0;
   let pieceCount = 0;
@@ -280,12 +315,30 @@ function build(
     if (walls === null || walls.some((k) => reserved.has(k))) return null;
     return { run, walls, cap };
   };
+  /** Empty cells, with `cells` filled too, that have a clear straight line to some edge. */
+  const landing = (cells: readonly Cell[]) => {
+    const own = new Set(cells.map((c) => key(c.row, c.col)));
+    const full = (r: number, c: number) => taken.has(key(r, c)) || own.has(key(r, c));
+    let n = 0;
+    for (let r = 0; r < p.rows; r++) {
+      for (let c = 0; c < p.cols; c++) {
+        if (full(r, c) || reserved.has(key(r, c))) continue;
+        const clear = Object.values(STEP).some((d) => {
+          for (let y = r + d.row, x = c + d.col; inside(y, x); y += d.row, x += d.col) if (full(y, x)) return false;
+          return true;
+        });
+        if (clear) n++;
+      }
+    }
+    return n;
+  };
   type Option = {
     pieces: { cells: Cell[]; anchor: Cell; shape: Cell[]; path: Set<number> }[];
     colour: Colour;
     unit: { kind: Kind } | { motif: MotifName };
     blocked: number;
     walls: number;
+    caging: number;
     holes: number;
     score: number;
     thread: ReturnType<typeof channel>;
@@ -303,6 +356,8 @@ function build(
       const blocked = free.filter((path) => cells.some((c) => path.has(key(c.row, c.col)))).length;
       // Wall in the threads' channels.
       const walls = flanks.size === 0 ? 0 : cells.filter((c) => flanks.has(key(c.row, c.col))).length;
+      // Fill a U's notch.
+      const caging = notches.size === 0 ? 0 : cells.filter((c) => notches.has(key(c.row, c.col))).length;
       // Without single cells (job 018), an empty cell cut off from every other is a hole no piece
       // can fill; count the ones this spot would make.
       let holes = 0;
@@ -319,7 +374,7 @@ function build(
           }
         }
       }
-      return { blocked, walls, holes, base: touching * 0.5 - spread * p.centrePull };
+      return { blocked, walls, caging, holes, base: touching * 0.5 - spread * p.centrePull + cells.length * (p.sizePull ?? 0) };
     };
     for (const kind of new Set(remaining)) {
       for (const shape of SHAPES[kind]) {
@@ -328,7 +383,7 @@ function build(
             const cells = shape.map((o) => ({ row: row + o.row, col: col + o.col }));
             if (cells.some((c) => !inside(c.row, c.col) || taken.has(key(c.row, c.col)) || reserved.has(key(c.row, c.col)))) continue;
             if (ring + cells.filter(onRing).length > p.ringMax) continue;
-            const { blocked, walls, holes, base } = judge(cells);
+            const { blocked, walls, caging, holes, base } = judge(cells);
             for (const colour of COLOURS) {
               if (!p.dealShares && (used.get(colour) ?? 0) >= quota.get(colour)!) continue;
               const path = pathOf(cells, STEP[sideOf.get(colour)!]);
@@ -336,7 +391,7 @@ function build(
               const thread = threading ? channel(cells, STEP[sideOf.get(colour)!], path, blocked) : null;
               // The chance term is drawn per valid colour, as before groups existed, so boards
               // without groups come out exactly as they did.
-              options.push({ pieces: [{ cells, anchor: { row, col }, shape, path }], colour, unit: { kind }, blocked, walls, holes, score: base + rand() * 2, thread });
+              options.push({ pieces: [{ cells, anchor: { row, col }, shape, path }], colour, unit: { kind }, blocked, walls, caging, holes, score: base + rand() * 2, thread });
             }
           }
         }
@@ -350,7 +405,7 @@ function build(
             const all = pieces.flat();
             if (all.some((c) => !inside(c.row, c.col) || taken.has(key(c.row, c.col)) || reserved.has(key(c.row, c.col)))) continue;
             if (ring + all.filter(onRing).length > p.ringMax) continue;
-            const { blocked, walls, holes, base } = judge(all);
+            const { blocked, walls, caging, holes, base } = judge(all);
             for (const colour of COLOURS) {
               if (!p.dealShares && (used.get(colour) ?? 0) + turn.length > quota.get(colour)!) continue;
               const side = sideOf.get(colour)!;
@@ -365,7 +420,7 @@ function build(
                 for (const c of pieces[i]!) down.add(key(c.row, c.col));
               }
               if (ordered.length < order.length) continue;
-              options.push({ pieces: ordered, colour, unit: { motif }, blocked, walls, holes, score: base + rand() * 2, thread: null });
+              options.push({ pieces: ordered, colour, unit: { motif }, blocked, walls, caging, holes, score: base + rand() * 2, thread: null });
             }
           }
         }
@@ -374,15 +429,31 @@ function build(
     if (options.length === 0) return null;
     // Block as many free pieces as possible; among those spots, touch
     // neighbours and keep to the middle, with a little chance. A thread's spot
-    // comes first while one is still to plant, then walls for its channel.
+    // comes first while one is still to plant, then a piece for a U's notch,
+    // then walls for a channel.
     const planting = options.some((o) => o.thread);
+    const caging = options.some((o) => o.caging > 0);
     const walling = options.some((o) => o.walls > 0);
-    const pool = planting ? options.filter((o) => o.thread) : walling ? options.filter((o) => o.walls > 0) : options;
+    const pool = planting ? options.filter((o) => o.thread)
+      : caging ? options.filter((o) => o.caging > 0)
+      : walling ? options.filter((o) => o.walls > 0)
+      : options;
     // Spots that strand no hole first (boards without single cells), then, unless
     // blockFirst is off, the ones blocking the most free pieces.
     const fewest = Math.min(...pool.map((o) => o.holes));
     const most = p.blockFirst === false ? 0 : Math.max(...pool.filter((o) => o.holes === fewest).map((o) => o.blocked));
-    const best = pool.filter((o) => o.holes === fewest && o.blocked >= most).sort((a, b) => b.score - a.score);
+    const ranked = pool.filter((o) => o.holes === fewest && o.blocked >= most).sort((a, b) => b.score - a.score);
+    let best = ranked;
+    if (p.landing) {
+      // Job 019: keep at least one empty cell with a clear line to an edge for every unit still to place.
+      const left = remaining.length + groupsLeft.length - 1;
+      const kept: Option[] = [];
+      for (const o of ranked) {
+        if (landing(o.pieces.flatMap((x) => x.cells)) >= left) kept.push(o);
+        if (kept.length === 3) break;
+      }
+      if (kept.length > 0) best = kept;
+    }
     const pick = best[Math.floor(rand() * Math.min(3, best.length))]!;
     const group = 'motif' in pick.unit ? `g${++groupCount}` : undefined;
     if (pick.thread) {
@@ -396,12 +467,32 @@ function build(
       for (const k of pick.thread.run) reserved.add(k);
       for (const k of [...pick.thread.walls, ...(pick.thread.cap === null ? [] : [pick.thread.cap])]) flanks.add(k);
     }
+    if (pick.caging > 0) {
+      // The U and the piece it cages keep their colours: both leave out of the opening.
+      const u = notches.get([...pick.pieces[0]!.cells].map((c) => key(c.row, c.col)).find((k) => notches.has(k))!)!;
+      fixed.add(u);
+      fixed.add(`p${pieceCount}`);
+      if (--cagesLeft === 0) notches.clear();
+      else for (const [k, id] of notches) if (id === u) notches.delete(k);
+    }
     for (const piece of pick.pieces) {
+      if (cagesLeft > 0 && !pick.thread) {
+        const notch = notchOf(piece.shape).map((o) => key(piece.anchor.row + o.row, piece.anchor.col + o.col));
+        // Only a U leaving toward its opening has its notch in its own lane.
+        if (notch.length > 0 && notch.every((k) => piece.path.has(k) && !taken.has(k) && !reserved.has(k))) {
+          for (const k of notch) notches.set(k, `p${pieceCount}`);
+        }
+      }
       placed.push({ id: `p${pieceCount++}`, colour: pick.colour, anchor: piece.anchor, shape: piece.shape, ...(group ? { group } : {}) });
       paths.push(piece.path);
       for (const c of piece.cells) {
         taken.add(key(c.row, c.col));
         flanks.delete(key(c.row, c.col));
+      }
+      if (notches.size > 0) {
+        // A notch cell now taken by anyone else is filled; a U whose notch filled up otherwise drops out.
+        const u = [...piece.cells].map((c) => notches.get(key(c.row, c.col))).find((id) => id !== undefined);
+        if (u !== undefined) for (const [k, id] of notches) if (id === u) notches.delete(k);
       }
       ring += piece.cells.filter(onRing).length;
     }
@@ -428,6 +519,16 @@ function build(
  * single pieces; touching inside it is not clumping. Fixed pieces (threads,
  * job 015) keep the colour they were built with. With shares given, the deal
  * hands out those counts rather than the build's.
+ *
+ * Peeling (job 019) deals instead by clearing the board in thought: take a
+ * piece with a clear lane, give it the colour of a rail it can reach now,
+ * remove it, repeat. Removing never blocks anything, so the colouring clears
+ * by construction. Each colour is picked for its share, a far rail (spread)
+ * and no same-colour neighbour. Groups and fixed pieces keep the colours
+ * they were built with. The polish then anneals: it scores spread and
+ * clumping shortfalls, never takes a trade that leaves a piece stuck, takes
+ * any other that does not raise the score, and now and then one that does,
+ * less often as it cools.
  */
 function mixColours(
   s: State,
@@ -436,6 +537,7 @@ function mixColours(
   fixed: ReadonlySet<string>,
   shares: ReadonlyMap<Colour, number> | null,
   clumpMargin: number,
+  peel: boolean,
 ): State | null {
   const sides = (Object.keys(s.rails) as Side[]);
   const sideOf = new Map(sides.map((side) => [s.rails[side], side] as const));
@@ -542,6 +644,71 @@ function mixColours(
     }
     units.filter((u) => u.length === 1 && !pinned[u[0]!]).forEach((u, k) => (colours[u[0]!] = rest[k]!));
   }
+  if (peel) {
+    if (!shares) return null;
+    const keep = s.blocks.map((_, i) => pinned[i] || units[unitOf[i]!]!.length > 1);
+    const left = new Map(shares);
+    s.blocks.forEach((b, i) => {
+      if (!keep[i]) return;
+      colours[i] = b.colour;
+      left.set(b.colour, left.get(b.colour)! - 1);
+    });
+    if ([...left.values()].some((k) => k < 0)) return null;
+    const mean = Object.fromEntries(sides.map((side) => [side, dist.reduce((t, d) => t + d[side], 0) / n])) as Record<Side, number>;
+    const gone = new Array<boolean>(n).fill(false);
+    const coloured = keep.slice();
+    const neighbours = Array.from({ length: n }, () => [] as number[]);
+    for (const [i, j] of touching) {
+      neighbours[i]!.push(j);
+      neighbours[j]!.push(i);
+    }
+    const open = (i: number) => sides.filter((side) => lanes[i]![side].every((j) => gone[j]));
+    for (let removed = 0; removed < n; removed++) {
+      // Fixed pieces go as soon as their own lane is clear; otherwise the piece with the most
+      // rails open, so pieces wait for a choice where they can.
+      let best = -1;
+      let most = 0;
+      for (let i = 0; i < n; i++) {
+        if (gone[i]) continue;
+        const sidesOpen = open(i);
+        if (keep[i]) {
+          if (sidesOpen.includes(sideOf.get(colours[i]!)!)) { best = i; break; }
+          continue;
+        }
+        const k = sidesOpen.length + rand() * 0.5;
+        if (sidesOpen.length > 0 && k > most) { best = i; most = k; }
+      }
+      if (best < 0) return null;
+      if (!keep[best]) {
+        let pick: Colour | null = null;
+        let top = -Infinity;
+        for (const side of open(best)) {
+          const c = s.rails[side];
+          const same = neighbours[best]!.filter((j) => coloured[j] && colours[j] === c).length;
+          const score = (left.get(c)! > 0 ? 0 : -100) + dist[best]![side] / Math.max(1, mean[side]) - 1.5 * same + rand() * 0.3;
+          if (score > top) { top = score; pick = c; }
+        }
+        colours[best] = pick!;
+        coloured[best] = true;
+        left.set(pick!, left.get(pick!)! - 1);
+      }
+      gone[best] = true;
+    }
+    // A colour over its share gives single pieces to colours under theirs, keeping the board clearable.
+    for (let step = 0; step < 20000 && [...left.values()].some((k) => k < 0); step++) {
+      const i = Math.floor(rand() * n);
+      if (keep[i] || left.get(colours[i]!)! >= 0) continue;
+      const under = COLOURS.filter((c) => left.get(c)! > 0);
+      const was = colours[i]!;
+      colours[i] = under[Math.floor(rand() * under.length)]!;
+      if (stuck(colours).length > 0) colours[i] = was;
+      else {
+        left.set(was, left.get(was)! + 1);
+        left.set(colours[i]!, left.get(colours[i]!)! - 1);
+      }
+    }
+    if ([...left.values()].some((k) => k !== 0)) return null;
+  }
   const counts = [...new Set(colours)].map((c) => colours.filter((x) => x === c).length);
   const clumpMax = counts.reduce((t, k) => t + k * (k - 1), 0) / (n * (n - 1)) + clumpMargin;
   /**
@@ -578,8 +745,10 @@ function mixColours(
   let spreadNow = spread(colours);
   let clumpNow = clump(colours);
   const done = () => stuckNow.length === 0 && spreadNow >= target && clumpNow <= clumpMax;
-  for (let step = 0; step < 20000 && !done(); step++) {
-    const fixing = stuckNow.length > 0 || spreadNow < target;
+  const cost = (st: number, sp: number, cl: number) => st + 200 * Math.max(0, target - sp) + 200 * Math.max(0, cl - clumpMax);
+  const steps = peel ? 100000 : 20000;
+  for (let step = 0; step < steps && !done(); step++) {
+    const fixing = stuckNow.length > 0 || spreadNow < target || (peel && rand() < 0.5);
     const sameColour = touching.filter(([i, j]) => colours[i] === colours[j]);
     const a = fixing
       ? stuckNow.length > 0 ? stuckNow[Math.floor(rand() * stuckNow.length)]! : Math.floor(rand() * n)
@@ -590,7 +759,10 @@ function mixColours(
     const nextStuck = stuck(colours);
     const nextSpread = spread(colours);
     const nextClump = clump(colours);
-    const better = fixing
+    const rise = cost(nextStuck.length, nextSpread, nextClump) - cost(stuckNow.length, spreadNow, clumpNow);
+    const better = peel
+      ? nextStuck.length === 0 && (rise <= 0 || rand() < Math.exp(-rise / (1 - step / steps + 0.02)))
+      : fixing
       ? (nextStuck.length < stuckNow.length && nextSpread >= target) ||
         (nextStuck.length === stuckNow.length && nextSpread > spreadNow)
       : nextStuck.length === 0 && nextSpread >= target && nextClump < clumpNow;
@@ -647,6 +819,7 @@ function meets(p: SearchParams, s: State): boolean {
     const found = threads(s).filter((t) => t.channel >= (p.threadChannel ?? 2));
     if (found.length < p.threads! || found.filter((t) => !t.open).length < (p.closedThreads ?? 0)) return false;
   }
+  if ((p.cages ?? 0) > 0 && cages(s).filter((c) => c.holdsU).length < p.cages!) return false;
   return COLOURS.every((c) => s.blocks.some((b) => b.colour === c));
 }
 
