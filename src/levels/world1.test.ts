@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyExit, boardToText, canExit, cellsOf, isSolved, isStuck, validateState, type Block, type State } from '../engine';
 import { computeLayout } from '../game/layout';
-import { blockers, clumping, colourSpread, dependency } from '../search/measures';
+import { blockers, clumping, colourSpread, dependency, threads } from '../search/measures';
 import { makeRandom, tapSolution } from '../search/search';
 import { BANDS, COLOUR_SHARE, type Band } from './bands';
 import { lateCandidates } from './candidates';
@@ -78,10 +78,16 @@ describe('the curve', () => {
     }
   });
 
-  it('never drops a piece from one level to the next inside a band (late boards use fewer, bigger pieces)', () => {
+  it('never drops a piece from one level to the next', () => {
     for (let i = 1; i < levels.length; i++) {
-      if (i === 5 || i === 10) continue;
       expect(levels[i]!.start.blocks.length).toBeGreaterThanOrEqual(levels[i - 1]!.start.blocks.length);
+    }
+  });
+
+  it('shrinks the average piece from level 6 on as the board fills (job 015)', () => {
+    const average = (s: State) => filled(s) / s.blocks.length;
+    for (let i = 6; i < levels.length; i++) {
+      expect(average(levels[i]!.start), `level ${i + 1}`).toBeLessThan(average(levels[i - 1]!.start));
     }
   });
 
@@ -118,14 +124,18 @@ describe.each(levels.slice(5, 10).map((l) => [l.id, l.start] as const))('middle 
 describe.each(levels.slice(10, 15).map((l) => [l.id, l.start] as const))('late band: level %s', (_, s) => {
   it('sits in the late band', () => inBand(s, BANDS.late));
 
-  it('is shaped like the reference: a nest of three L\'s, a staircase, big L\'s, no single cells', () => {
+  it('is many small pieces, single cells included, with two or three nests of L\'s as landmarks', () => {
     const groups = new Map<string, Block[]>();
     for (const b of s.blocks) if (b.group) groups.set(b.group, [...(groups.get(b.group) ?? []), b]);
-    expect(groups.size).toBeGreaterThanOrEqual(4);
+    expect(groups.size).toBeGreaterThanOrEqual(2);
+    expect(groups.size).toBeLessThanOrEqual(3);
     expect([...groups.values()].some((g) => g.length === 3 && g.some((b) => b.shape.length === 7))).toBe(true);
-    expect([...groups.values()].some((g) => g.every((b) => b.shape.length === 2))).toBe(true);
-    expect(s.blocks.filter((b) => b.shape.length >= 6).length).toBeGreaterThanOrEqual(2);
-    expect(s.blocks.every((b) => b.shape.length >= 2)).toBe(true);
+    expect(s.blocks.filter((b) => b.shape.length <= 3).length).toBeGreaterThanOrEqual(0.75 * s.blocks.length);
+    expect(s.blocks.some((b) => b.shape.length === 1)).toBe(true);
+  });
+
+  it('has at least two threaded pieces: one-cell channels through the crowd (job 015)', () => {
+    expect(threads(s).length).toBeGreaterThanOrEqual(2);
   });
 
   it('keeps each shape group one colour, its pieces touching, and one holding another', () => {
@@ -141,10 +151,10 @@ describe.each(levels.slice(10, 15).map((l) => [l.id, l.start] as const))('late b
 });
 
 describe('the late band ends at reference density', () => {
-  it('level 15 is 30 pieces at 90 percent', () => {
+  it('level 15 is 44 pieces at 92 percent', () => {
     const s = levels[14]!.start;
-    expect(s.blocks).toHaveLength(30);
-    expect(fill(s)).toBeGreaterThanOrEqual(0.89);
+    expect(s.blocks).toHaveLength(BANDS.late.pieces[1]);
+    expect(fill(s)).toBeGreaterThanOrEqual(0.91);
   });
 });
 
@@ -192,19 +202,24 @@ describe('rule 2 on a 375 px phone', () => {
     }
   });
 
-  it('gives every piece a touch target of at least 44 px along its longest side', () => {
+  it('gives every piece but a late single cell a touch target of at least 44 px along its longest side', () => {
     for (const [w, h] of phones) {
       for (const { start: s } of levels) {
         const cell = cellOn(w, h, s.rows, s.cols);
-        for (const b of s.blocks) expect(longest(b) * cell, `${b.id} on ${w}x${h}`).toBeGreaterThanOrEqual(44);
+        const late = s.cols === BANDS.late.cols && s.rows === BANDS.late.rows;
+        for (const b of s.blocks) {
+          if (late && b.shape.length === 1) continue;
+          expect(longest(b) * cell, `${b.id} on ${w}x${h}`).toBeGreaterThanOrEqual(44);
+        }
       }
     }
   });
 
-  it('allows single-cell pieces only where a cell is 44 px or larger', () => {
+  it('allows single-cell pieces where a cell is 44 px or larger, and on late boards (job 015)', () => {
     for (const [w, h] of phones) {
       for (const { start: s } of levels) {
-        if (s.blocks.some((b) => b.shape.length === 1)) expect(cellOn(w, h, s.rows, s.cols)).toBeGreaterThanOrEqual(44);
+        const late = s.cols === BANDS.late.cols && s.rows === BANDS.late.rows;
+        if (s.blocks.some((b) => b.shape.length === 1) && !late) expect(cellOn(w, h, s.rows, s.cols)).toBeGreaterThanOrEqual(44);
       }
     }
   });

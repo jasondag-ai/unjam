@@ -39,9 +39,10 @@ export const BANDS: Readonly<Record<Band['name'], Band>> = {
     kinds: BARS_AND_LS, sizeWeights: { 2: 5, 3: 4, 4: 1.2, 5: 0.6 }, smallShare: 0.6,
   },
   late: {
-    // Shaped like the reference (job 014): fewer, bigger pieces, with shape groups (nests of L's
-    // up to 7 cells, staircases) placed by the level plan. No single cells: late cells are 33 px.
-    name: 'late', cols: 9, rows: 11, pieces: [24, 30], fill: [0.85, 0.9],
-    kinds: [...BARS_AND_LS, 'V5'], sizeWeights: { 2: 5, 3: 4, 4: 1.2, 5: 0.8 }, smallShare: 0.5,
+    // Job 015: legibility is the difficulty. Many small pieces, 1 to 3 cells (single cells allowed
+    // at 33 px, nearest-centre hits carry them), a few long bars, and two or three nests of L's from
+    // the level plan as landmarks.
+    name: 'late', cols: 9, rows: 11, pieces: [34, 44], fill: [0.85, 0.92],
+    kinds: ['M', 'D', 'I3', 'L3', 'I4', 'I5'], sizeWeights: { 1: 3, 2: 5, 3: 3, 4: 0.5, 5: 0.4 }, smallShare: 0.45,
   },
 };

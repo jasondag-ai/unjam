@@ -8,8 +8,11 @@ is checked against all of them.
    a piece's target spans at least 44 px along its longest
    side, expanded away from neighbours. Cells may be as
    small as 28 px on a 375 px phone, so a single-cell piece
-   is allowed only where a cell is 44 px or larger. A tap
-   between two blocks resolves to the nearer block centre.
+   is allowed only where a cell is 44 px or larger, except
+   on late boards (job 015): there single cells are allowed
+   at 33 px and nearest-centre resolution carries them. A
+   tap between two blocks resolves to the nearer block
+   centre.
 3. The engine stays pure. No DOM, canvas, browser globals
    or timers in src/engine/.
 4. State is immutable. Moves return a new board. Undo is a
