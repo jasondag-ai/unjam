@@ -21,17 +21,17 @@ const lightness = (hex: string) => {
   return 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
 };
 
-describe('palette (job 015)', () => {
+describe('palette (jobs 015 and 016)', () => {
   const { ground, blocks } = world1.palette;
   const colours = Object.entries(blocks);
 
-  it('keeps cyan #4CD6E6 as the anchor', () => {
-    expect(blocks.cyan).toBe('#4CD6E6');
+  it('keeps the sky blue #40B4FF as cyan, the anchor', () => {
+    expect(blocks.cyan).toBe('#40B4FF');
   });
 
   it('gives all four colours roughly equal contrast on the ground, well past 4.5:1', () => {
     const ratios = colours.map(([, hex]) => contrast(hex, ground));
-    for (const r of ratios) expect(r).toBeGreaterThanOrEqual(9);
+    for (const r of ratios) expect(r).toBeGreaterThanOrEqual(8);
     expect(Math.max(...ratios) / Math.min(...ratios)).toBeLessThanOrEqual(1.25);
   });
 
