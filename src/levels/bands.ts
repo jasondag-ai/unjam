@@ -41,8 +41,8 @@ export const BANDS: Readonly<Record<Band['name'], Band>> = {
   late: {
     // Job 015: legibility is the difficulty. Many small pieces, 1 to 3 cells (single cells allowed
     // at 33 px, nearest-centre hits carry them), a few long bars, and two or three nests of L's from
-    // the level plan as landmarks.
-    name: 'late', cols: 9, rows: 11, pieces: [34, 44], fill: [0.85, 0.92],
+    // the level plan as landmarks. Fill 82 to 88 percent leaves room for threads' channels (job 016).
+    name: 'late', cols: 9, rows: 11, pieces: [34, 44], fill: [0.82, 0.88],
     kinds: ['M', 'D', 'I3', 'L3', 'I4', 'I5'], sizeWeights: { 1: 3, 2: 5, 3: 3, 4: 0.5, 5: 0.4 }, smallShare: 0.45,
   },
 };

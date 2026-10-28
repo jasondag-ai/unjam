@@ -134,8 +134,10 @@ describe.each(levels.slice(10, 15).map((l) => [l.id, l.start] as const))('late b
     expect(s.blocks.some((b) => b.shape.length === 1)).toBe(true);
   });
 
-  it('has at least two threaded pieces: one-cell channels through the crowd (job 015)', () => {
-    expect(threads(s).length).toBeGreaterThanOrEqual(2);
+  it('has at least two threaded pieces with channels of 4 or more, one hidden from the edge (job 016)', () => {
+    const long = threads(s).filter((t) => t.channel >= 4);
+    expect(long.length).toBeGreaterThanOrEqual(2);
+    expect(long.filter((t) => !t.open).length).toBeGreaterThanOrEqual(1);
   });
 
   it('keeps each shape group one colour, its pieces touching, and one holding another', () => {
@@ -151,10 +153,10 @@ describe.each(levels.slice(10, 15).map((l) => [l.id, l.start] as const))('late b
 });
 
 describe('the late band ends at reference density', () => {
-  it('level 15 is 44 pieces at 92 percent', () => {
+  it('level 15 is 44 pieces at 88 percent', () => {
     const s = levels[14]!.start;
     expect(s.blocks).toHaveLength(BANDS.late.pieces[1]);
-    expect(fill(s)).toBeGreaterThanOrEqual(0.91);
+    expect(fill(s)).toBeGreaterThanOrEqual(0.87);
   });
 });
 

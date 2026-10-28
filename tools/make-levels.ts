@@ -8,10 +8,10 @@ import type { MotifName } from '../src/search/shapes';
 
 const RAILS = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
 
-type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'threads' | 'dealShares' | 'tries'> & { readonly colourMix?: number; readonly groups?: readonly MotifName[] } & { readonly band: 'early' | 'middle' | 'late' };
+type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'threads' | 'threadChannel' | 'closedThreads' | 'dealShares' | 'tries'> & { readonly colourMix?: number; readonly groups?: readonly MotifName[] } & { readonly band: 'early' | 'middle' | 'late' };
 
 // Rising steadily: 6x7 for levels 1 to 5, 8x9 for 6 to 10, 9x11 for 11 to 15.
-// Fill 36% -> 92%; pieces 8 -> 26, then 39 -> 44 small pieces on 9x11 (job 015). Levels 6 to 15 mix colours (job 012). Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give
+// Fill 36% -> 88%; pieces 8 -> 26, then 39 -> 44 small pieces on 9x11 (job 015). Levels 6 to 15 mix colours (job 012). Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give
 // every colour 20 to 30 percent. Middle levels take the fewest free pieces
 // the search finds (it prefers fewest).
 const CURVE: readonly Plan[] = [
@@ -25,15 +25,16 @@ const CURVE: readonly Plan[] = [
   { band: 'middle', pieces: 22, cells: 53, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
   { band: 'middle', pieces: 24, cells: 55, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
   { band: 'middle', pieces: 26, cells: 57, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
-  // Late, 9x11 (job 015): legibility is the difficulty. 39-44 pieces at 86-92 percent, mostly 1
+  // Late, 9x11 (job 015): legibility is the difficulty. 39-44 pieces at 83-88 percent (job 016: down from 86-92 for channels), mostly 1
   // to 3 cells, so average piece size keeps falling from level 10 (2.2 cells) to 2.1. Two
   // nests of L's as landmarks (a third leaves too few 2 and 3 cell pieces), and at least two threaded
-  // pieces, colours mixed; the build takes any colour and mixing deals the shares.
-  { band: 'late', pieces: 39, cells: 85, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
-  { band: 'late', pieces: 40, cells: 87, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
-  { band: 'late', pieces: 41, cells: 88, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
-  { band: 'late', pieces: 42, cells: 90, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
-  { band: 'late', pieces: 44, cells: 91, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
+  // pieces with channels of 4 or more, one closed at its outer end by a piece, so it cannot be seen
+  // from the edge. Colours mixed; the build takes any colour and mixing deals the shares.
+  { band: 'late', pieces: 39, cells: 82, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, threadChannel: 4, closedThreads: 1, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
+  { band: 'late', pieces: 40, cells: 83, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, threadChannel: 4, closedThreads: 1, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
+  { band: 'late', pieces: 41, cells: 84, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, threadChannel: 4, closedThreads: 1, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
+  { band: 'late', pieces: 42, cells: 86, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, threadChannel: 4, closedThreads: 1, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
+  { band: 'late', pieces: 44, cells: 87, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, threadChannel: 4, closedThreads: 1, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
 ];
 
 const out: string[] = [
