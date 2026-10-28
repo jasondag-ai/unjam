@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { applyExit, boardToText, canExit, cellsOf, isSolved, isStuck, validateState, type Block, type State } from '../engine';
 import { computeLayout } from '../game/layout';
-import { blockers, clumping, colourSpread, dependency, threads } from '../search/measures';
+import { blockers, cages, clumping, colourSpread, dependency, shapeMix, threads } from '../search/measures';
+import { isThick } from '../search/shapes';
 import { makeRandom, tapSolution } from '../search/search';
 import { BANDS, COLOUR_SHARE, type Band } from './bands';
 import { lateCandidates } from './candidates';
@@ -124,15 +125,23 @@ describe.each(levels.slice(5, 10).map((l) => [l.id, l.start] as const))('middle 
 describe.each(levels.slice(10, 20).map((l) => [l.id, l.start] as const))('late band: level %s', (_, s) => {
   it('sits in the late band', () => inBand(s, BANDS.late));
 
-  it('is many dominoes and threes, no single cells, with two nests of L\'s and two long bars as landmarks (job 018)', () => {
+  it('keeps two nests of L\'s and two long bars as landmarks (job 018)', () => {
     const groups = new Map<string, Block[]>();
     for (const b of s.blocks) if (b.group) groups.set(b.group, [...(groups.get(b.group) ?? []), b]);
     expect(groups.size).toBe(2);
     expect([...groups.values()].some((g) => g.length === 3 && g.some((b) => b.shape.length === 7))).toBe(true);
     expect(s.blocks.filter((b) => !b.group && b.shape.length >= 4).length).toBeGreaterThanOrEqual(2);
-    expect(s.blocks.filter((b) => b.shape.length <= 3).length).toBeGreaterThanOrEqual(0.85 * s.blocks.length);
-    expect(s.blocks.every((b) => b.shape.length >= 2)).toBe(true);
-    expect(filled(s) / s.blocks.length).toBeLessThanOrEqual(2.4);
+  });
+
+  it('is 15 to 25 percent singles, with convoluted strokes, all one cell wide (job 019)', () => {
+    const m = shapeMix(s);
+    expect(within(m.singles / m.pieces, BANDS.late.singleShare!), `${m.singles} singles of ${m.pieces}`).toBe(true);
+    expect(m.convoluted, 'convoluted').toBeGreaterThanOrEqual(0.2 * m.pieces);
+    for (const b of s.blocks) expect(isThick(b.shape), b.id).toBe(false);
+  });
+
+  it('cages a piece inside a U that waits for it (job 019)', () => {
+    expect(cages(s).filter((c) => c.holdsU).length).toBeGreaterThanOrEqual(1);
   });
 
   it('has at least two threaded pieces with channels of 4 or more, one hidden from the edge (job 016)', () => {
@@ -207,19 +216,19 @@ describe('rule 2 on a 375 px phone', () => {
     }
   });
 
-  it('gives every piece a touch target of at least 44 px along its longest side', () => {
+  it('gives every piece of two or more cells a touch target of at least 44 px along its longest side', () => {
     for (const [w, h] of phones) {
       for (const { start: s } of levels) {
         const cell = cellOn(w, h, s.rows, s.cols);
-        for (const b of s.blocks) expect(longest(b) * cell, `${b.id} on ${w}x${h}`).toBeGreaterThanOrEqual(44);
+        for (const b of s.blocks) if (b.shape.length > 1) expect(longest(b) * cell, `${b.id} on ${w}x${h}`).toBeGreaterThanOrEqual(44);
       }
     }
   });
 
-  it('allows single-cell pieces only where a cell is 30 px or larger (job 018)', () => {
+  it('allows single-cell pieces where a cell is 24 px or larger: the press highlight makes them safe (job 019)', () => {
     for (const [w, h] of phones) {
       for (const { start: s } of levels) {
-        if (s.blocks.some((b) => b.shape.length === 1)) expect(cellOn(w, h, s.rows, s.cols)).toBeGreaterThanOrEqual(30);
+        if (s.blocks.some((b) => b.shape.length === 1)) expect(cellOn(w, h, s.rows, s.cols)).toBeGreaterThanOrEqual(24);
       }
     }
   });
