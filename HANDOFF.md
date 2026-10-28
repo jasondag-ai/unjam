@@ -364,8 +364,30 @@ pieces making bigger blocks), then "let's try and see how it looks" to the propo
     tracing a lane inward. That piece must leave first.
 60. One closed and one open channel per board, as asked (at least one closed).
 
+## Job 018: smaller, denser, intermingled (2026-10-28)
+- Press highlight (shipped alone as 0.0.11): while a finger is down, the piece a lift would commit
+  to (tapOnRelease) is drawn lit; sliding off darkens it and still cancels.
+- Grids: middle 10x12 (30 px cells on 375 px), late 12x15 (25 px; Jason's "28 px" assumed no
+  frame margin). 14 wide would be 21 px, under the 24 px floor.
+- Jason chose option A (picture of three options): no single cells at 25 px, so the late average
+  is about 2.3, not the 1.8 asked for. Rule 2 now: 24 px floor, 14 wide max, singles only at 30 px+.
+- Middle: 30/78, 33/82, 36/86, 39/90, 43/94. Late (levels 11-20): 66-70 pieces, 153-162 cells
+  (85-90 percent), dominoes and threes, two nests, two long bars, two 4-cell channels (one closed).
+- Same-colour neighbours below random on 6-20 (`clumpMargin` -0.03): 18-21 percent vs 23-24.
+- Search: `bars`, `clumpMargin`, `blockFirst` (off for late: blocking-first walled in the middle and
+  the last dominoes found no lane), hole avoidance on boards without single cells, piece names past
+  52. Levels 1-5 unchanged (still not colour-mixed: 20-36 percent same-colour neighbours).
+- 279 tests; all 20 levels clear by taps at 375x667, worst frame 16.8 ms.
+
+## Job 018 decisions
+61. Late average 2.3 with no singles (Jason, option A).
+62. Late piece counts no longer have to rise every level; fill does (85 -> 90 percent).
+63. Levels 1-5 left unmixed: job 018 rebuilt only middle and late; asking before changing them.
+
 ## Needs from Jason
-- Play 11 to 15 on the phone: can you find the closed channel from the edge? Is the blue right?
+- Play level 20 on the phone: hard to read? Does pressing show the piece, and do you hit the one
+  you meant at 25 px?
+- Should levels 1-5 also get same-colour neighbours below random?
 
 ## Next step
 - On Jason's word: next job.

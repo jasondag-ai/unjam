@@ -16,24 +16,24 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Boards are portrait. The curve (`src/levels/bands.ts`, job 010):
   | Band | Grid (wide x tall) | Pieces | Fill |
   | early | 6x7 | 6 to 10 | 35-50% |
-  | middle | 8x9 | 18 to 26 | 65-80% |
-  | late | 9x11 | 34 to 44 | 82-88% | (jobs 015-016: many small pieces, threads) |
+  | middle | 10x12 | 30 to 43 | 65-80% |
+  | late | 12x15 | 60 to 70 | 85-90% | (job 018: levels 11-20, no singles at 25 px) |
 - Every colour gets 20 to 30 percent of each board's pieces.
-- Pieces are mostly 2 and 3 cells, with some 4 and 5 cell bars and L shapes. Single cells where a
-  cell is 44 px or more (early boards) and on late boards (job 015). Average piece size falls
-  from level 6 to 15: reading the board is the skill.
+- Pieces are mostly 2 and 3 cells, with some 4 and 5 cell bars and L shapes. Single cells only
+  where a cell is 30 px or more on a 375 px phone (job 018); cells never under 24 px, boards never
+  over 14 wide.
 - Early boards keep 2 to 3 free pieces at the start and cluster in the middle. Middle and late
   boards have no free-at-start target (4 to 8 on middle boards is accepted, job 011); the search
   takes the board with the smallest empty patch. Do not build a stronger search for free counts.
-- Late band (job 015): levels 11 to 15, 39 to 44 pieces, mostly 1 to 3 cells, two nests of L's
-  (7/5/3 and 5/3, one colour each) as landmarks, and at least two threaded pieces: a small piece
-  whose lane is a walled one-cell channel and which holds another (`threads()` in measures.ts).
-  Job 016: channels 4+ cells, at least one closed at its outer end by a piece (hidden from the edge).
-- Colours are mixed on levels 6 to 15 (job 012): colour must not follow position. Measures in
+- Late band (job 018): levels 11 to 20 on 12x15, dominoes and threes, two nests of L's (7/5/3
+  and 5/3, one colour each) and two long bars as landmarks, and two threaded pieces: a small piece
+  whose lane is a walled one-cell channel of 4+ cells and which holds another (`threads()` in
+  measures.ts); at least one channel closed at its outer end by a piece (hidden from the edge).
+- Colours are mixed on levels 6 to 20 (jobs 012, 018): colour must not follow position. Measures in
   `src/search/measures.ts`: spread ratio per colour (own-rail distance against the board's, at
-  least 0.9), same-colour neighbours (within 5 points of a random deal), and dependency depth
-  (pieces before the most-buried can go; at least 3 on late boards). With mixing on, 9x11 reaches
-  91 percent at 38-39 pieces and 88 percent at 40. Never loosen the mix to reach density.
+  least 0.9), same-colour neighbours (below a random deal, job 018), and dependency depth
+  (pieces before the most-buried can go; at least 3 on late boards). Never loosen the mix to reach
+  density.
 - Deadlock: when pieces remain and none can leave, the status says "Stuck: no piece can leave" and
   the footer button offers Restart; taps there cost no strike. Exits alone can never cause it
   (they only empty cells); it guards for drag input.
@@ -80,6 +80,7 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Job 014: late band shaped like the reference (nests of L's, staircases, big L's).
 - Job 015: legibility is the difficulty: many small late pieces, threads, palette contrast.
 - Job 016: real channels (4+ cells, one hidden from the edge), sky blue back.
+- Job 018: press highlight; grid 10x12 / 12x15; levels 16-20; same-colour neighbours below random.
 - The look (M1, final): ground #060B14, faint grid behind the board; blocks are rounded shapes with
   a 1.5px lit border, translucent fill of the same colour and an outer glow; sky blue #40B4FF (`cyan` in code), amber
   #F2A93B, violet #B3A3FF, mint #4ABF6A (job 016: contrast 8.4-9.9 on the ground, apart in lightness); rails are glowing bars; every block carries its colour's
@@ -96,6 +97,6 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 ## Commands
 - `npm test` — engine typecheck guard, full typecheck, Vitest.
 - `npx tsx src/engine/demo.ts` (or `npm run demo`) — scripted solve in the terminal.
-- `npm run levels` — regenerate levels 1 to 15 from the curve in `tools/make-levels.ts` (about 90 s).
+- `npm run levels` — regenerate levels 1 to 20 from the curve in `tools/make-levels.ts` (about 25 min).
 - `npm run dev` — Vite dev server on the local network, fixed port 5290 (5173-5181 belong to other projects).
 - `npm run release` — deploy (see Deploy). `npm run check-live` — is it live?
