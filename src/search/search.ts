@@ -1,5 +1,5 @@
 import { applyExit, canExit, cellsOf, isSolved, type Block, type Cell, type Colour, type Rails, type Side, type State } from '../engine';
-import { railDistance } from './measures';
+import { railDistance, threads } from './measures';
 import { MOTIF_CELLS, MOTIF_PIECES, MOTIF_TURNS, placementOrder, SHAPES, SIZE, type Kind, type MotifName } from './shapes';
 
 /** Everything that sets how hard a generated board is. */
@@ -35,6 +35,18 @@ export interface SearchParams {
    * against the board's, see measures.ts) must reach this. 0 is off.
    */
   readonly colourMix: number;
+  /**
+   * Threaded pieces (job 015): small pieces whose lane is a one-cell channel
+   * through the crowd (see measures.ts threads). The board must have at
+   * least this many. Left out, none are planted.
+   */
+  readonly threads?: number;
+  /**
+   * Job 015: build with any colour and let mixing deal each colour its
+   * share. Needs colourMix. Off, the build keeps to the quota (levels 6 to
+   * 10 were built that way and stay as they are).
+   */
+  readonly dealShares?: boolean;
   readonly tries: number;
   readonly seed: number;
 }
@@ -85,8 +97,9 @@ export function searchBoard(params: SearchParams, rails: Rails): SearchResult | 
   for (let t = 0; t < params.tries; t++) {
     const kinds = pickKinds(params, rand);
     if (!kinds) continue;
-    const built = build(params, rails, kinds, colourQuota(params, rand)!, rand);
-    const state = built && params.colourMix > 0 ? mixColours(built, params.colourMix, rand) : built;
+    const shares = colourQuota(params, rand)!;
+    const built = build(params, rails, kinds, shares, rand);
+    const state = built && params.colourMix > 0 ? mixColours(built.state, params.colourMix, rand, built.fixed, params.dealShares ? shares : null) : built?.state;
     if (!state || !meets(params, state)) continue;
     const pinned = state.blocks.filter((b) => blockerCount(state, b) >= 2).length;
     const rank = [largestGap(state), freeCount(state), -pinned];
@@ -165,7 +178,13 @@ const key = (row: number, col: number) => row * 100 + col;
  * A group's pieces go down in its own reverse tap order, each needing a
  * clear path past the board and the group pieces already down.
  */
-function build(p: SearchParams, rails: Rails, kinds: readonly Kind[], quota: Map<Colour, number>, rand: () => number): State | null {
+function build(
+  p: SearchParams,
+  rails: Rails,
+  kinds: readonly Kind[],
+  quota: Map<Colour, number>,
+  rand: () => number,
+): { state: State; fixed: ReadonlySet<string> } | null {
   const sideOf = new Map((Object.keys(rails) as (keyof Rails)[]).map((side) => [rails[side], side] as const));
   const taken = new Set<number>();
   const placed: Block[] = [];
@@ -173,6 +192,14 @@ function build(p: SearchParams, rails: Rails, kinds: readonly Kind[], quota: Map
   const remaining = [...kinds];
   const groupsLeft = [...p.groups];
   const used = new Map<Colour, number>();
+  // Threads (job 015): planted at the first spots that qualify once a quarter of the board is
+  // down, in front of a piece already there. The lane is kept empty, the next pieces wall it in
+  // on both sides, and the thread and the piece it holds keep their colours through mixing.
+  const total = kinds.length + p.groups.length;
+  let threadsLeft = p.threads ?? 0;
+  const reserved = new Set<number>();
+  const flanks = new Set<number>();
+  const fixed = new Set<string>();
   let ring = 0;
   let pieceCount = 0;
   let groupCount = 0;
@@ -190,39 +217,68 @@ function build(p: SearchParams, rails: Rails, kinds: readonly Kind[], quota: Map
     }
     return path;
   };
+  /** Cells on both sides of a lane, across its direction; null if the lane runs along the edge. */
+  const sidesOf = (path: ReadonlySet<number>, d: Cell) => {
+    const out: number[] = [];
+    for (const k of path) {
+      const r = Math.floor(k / 100), c = k % 100;
+      if (!inside(r + d.col, c + d.row) || !inside(r - d.col, c - d.row)) return null;
+      out.push(key(r + d.col, c + d.row), key(r - d.col, c - d.row));
+    }
+    return out;
+  };
+  /**
+   * A thread's spot: 1 to 3 cells, one cell wide across its way out, a lane
+   * of at least two cells clear of the edge rows and columns and of other
+   * threads' walls, and in front of a piece already down.
+   */
+  const channel = (cells: readonly Cell[], d: Cell, path: ReadonlySet<number>, blocked: number) => {
+    const across = d.row === 0 ? 'row' : 'col';
+    if (cells.length > 3 || blocked === 0 || path.size < 2 || new Set(cells.map((c) => c[across])).size !== 1) return false;
+    if ([...path].some((k) => reserved.has(k) || flanks.has(k))) return false;
+    const walls = sidesOf(path, d);
+    return walls !== null && walls.every((k) => !reserved.has(k));
+  };
   type Option = {
     pieces: { cells: Cell[]; anchor: Cell; shape: Cell[]; path: Set<number> }[];
     colour: Colour;
     unit: { kind: Kind } | { motif: MotifName };
     blocked: number;
+    walls: number;
     score: number;
+    thread: boolean;
   };
 
-  for (let step = 0; step < kinds.length + p.groups.length; step++) {
-    const free = paths.filter((path) => ![...path].some((k) => taken.has(k)));
+  for (let step = 0; step < total; step++) {
+    const freeIds = paths.flatMap((path, i) => ([...path].some((k) => taken.has(k)) ? [] : [i]));
+    const free = freeIds.map((i) => paths[i]!);
+    const threading = threadsLeft > 0 && step >= total / 4;
     const options: Option[] = [];
     const judge = (cells: readonly Cell[]) => {
       const touching = cells.filter((c) => Object.values(STEP).some((d) => taken.has(key(c.row + d.row, c.col + d.col)))).length;
       // Pull toward the middle so early boards read as one cluster.
       const spread = cells.reduce((n, c) => n + Math.abs(c.row - midRow) + Math.abs(c.col - midCol), 0) / cells.length;
       const blocked = free.filter((path) => cells.some((c) => path.has(key(c.row, c.col)))).length;
-      return { blocked, base: touching * 0.5 - spread * p.centrePull };
+      // Wall in the threads' channels.
+      const walls = flanks.size === 0 ? 0 : cells.filter((c) => flanks.has(key(c.row, c.col))).length;
+      return { blocked, walls, base: touching * 0.5 - spread * p.centrePull };
     };
     for (const kind of new Set(remaining)) {
       for (const shape of SHAPES[kind]) {
         for (let row = 0; row < p.rows; row++) {
           for (let col = 0; col < p.cols; col++) {
             const cells = shape.map((o) => ({ row: row + o.row, col: col + o.col }));
-            if (cells.some((c) => !inside(c.row, c.col) || taken.has(key(c.row, c.col)))) continue;
+            if (cells.some((c) => !inside(c.row, c.col) || taken.has(key(c.row, c.col)) || reserved.has(key(c.row, c.col)))) continue;
             if (ring + cells.filter(onRing).length > p.ringMax) continue;
-            const { blocked, base } = judge(cells);
+            const { blocked, walls, base } = judge(cells);
             for (const colour of COLOURS) {
-              if ((used.get(colour) ?? 0) >= quota.get(colour)!) continue;
+              if (!p.dealShares && (used.get(colour) ?? 0) >= quota.get(colour)!) continue;
               const path = pathOf(cells, STEP[sideOf.get(colour)!]);
               if ([...path].some((k) => taken.has(k))) continue;
+              const thread = threading && channel(cells, STEP[sideOf.get(colour)!], path, blocked);
               // The chance term is drawn per valid colour, as before groups existed, so boards
               // without groups come out exactly as they did.
-              options.push({ pieces: [{ cells, anchor: { row, col }, shape, path }], colour, unit: { kind }, blocked, score: base + rand() * 2 });
+              options.push({ pieces: [{ cells, anchor: { row, col }, shape, path }], colour, unit: { kind }, blocked, walls, score: base + rand() * 2, thread });
             }
           }
         }
@@ -234,11 +290,11 @@ function build(p: SearchParams, rails: Rails, kinds: readonly Kind[], quota: Map
           for (let col = 0; col < p.cols; col++) {
             const pieces = turn.map((shape) => shape.map((o) => ({ row: row + o.row, col: col + o.col })));
             const all = pieces.flat();
-            if (all.some((c) => !inside(c.row, c.col) || taken.has(key(c.row, c.col)))) continue;
+            if (all.some((c) => !inside(c.row, c.col) || taken.has(key(c.row, c.col)) || reserved.has(key(c.row, c.col)))) continue;
             if (ring + all.filter(onRing).length > p.ringMax) continue;
-            const { blocked, base } = judge(all);
+            const { blocked, walls, base } = judge(all);
             for (const colour of COLOURS) {
-              if ((used.get(colour) ?? 0) + turn.length > quota.get(colour)!) continue;
+              if (!p.dealShares && (used.get(colour) ?? 0) + turn.length > quota.get(colour)!) continue;
               const side = sideOf.get(colour)!;
               const order = placementOrder(turn, side);
               if (!order) continue;
@@ -251,7 +307,7 @@ function build(p: SearchParams, rails: Rails, kinds: readonly Kind[], quota: Map
                 for (const c of pieces[i]!) down.add(key(c.row, c.col));
               }
               if (ordered.length < order.length) continue;
-              options.push({ pieces: ordered, colour, unit: { motif }, blocked, score: base + rand() * 2 });
+              options.push({ pieces: ordered, colour, unit: { motif }, blocked, walls, score: base + rand() * 2, thread: false });
             }
           }
         }
@@ -259,22 +315,39 @@ function build(p: SearchParams, rails: Rails, kinds: readonly Kind[], quota: Map
     }
     if (options.length === 0) return null;
     // Block as many free pieces as possible; among those spots, touch
-    // neighbours and keep to the middle, with a little chance.
-    const most = Math.max(...options.map((o) => o.blocked));
-    const best = options.filter((o) => o.blocked === most).sort((a, b) => b.score - a.score);
+    // neighbours and keep to the middle, with a little chance. A thread's spot
+    // comes first while one is still to plant, then walls for its channel.
+    const planting = options.some((o) => o.thread);
+    const walling = options.some((o) => o.walls > 0);
+    const pool = planting ? options.filter((o) => o.thread) : walling ? options.filter((o) => o.walls > 0) : options;
+    const most = Math.max(...pool.map((o) => o.blocked));
+    const best = pool.filter((o) => o.blocked === most).sort((a, b) => b.score - a.score);
     const pick = best[Math.floor(rand() * Math.min(3, best.length))]!;
     const group = 'motif' in pick.unit ? `g${++groupCount}` : undefined;
+    if (planting) {
+      threadsLeft--;
+      fixed.add(`p${pieceCount}`);
+      const held = freeIds.find((i) => pick.pieces[0]!.cells.some((c) => paths[i]!.has(key(c.row, c.col))))!;
+      // A held piece in a shape group keeps the whole group's colour.
+      const heldGroup = placed[held]!.group;
+      for (const b of placed) if (b.id === `p${held}` || (heldGroup && b.group === heldGroup)) fixed.add(b.id);
+      for (const k of pick.pieces[0]!.path) reserved.add(k);
+      for (const k of sidesOf(pick.pieces[0]!.path, STEP[sideOf.get(pick.colour)!])!) flanks.add(k);
+    }
     for (const piece of pick.pieces) {
       placed.push({ id: `p${pieceCount++}`, colour: pick.colour, anchor: piece.anchor, shape: piece.shape, ...(group ? { group } : {}) });
       paths.push(piece.path);
-      for (const c of piece.cells) taken.add(key(c.row, c.col));
+      for (const c of piece.cells) {
+        taken.add(key(c.row, c.col));
+        flanks.delete(key(c.row, c.col));
+      }
       ring += piece.cells.filter(onRing).length;
     }
     if ('kind' in pick.unit) remaining.splice(remaining.indexOf(pick.unit.kind), 1);
     else groupsLeft.splice(groupsLeft.indexOf(pick.unit.motif), 1);
     used.set(pick.colour, (used.get(pick.colour) ?? 0) + pick.pieces.length);
   }
-  return { rows: p.rows, cols: p.cols, rails, blocks: placed };
+  return { state: { rows: p.rows, cols: p.cols, rails, blocks: placed }, fixed };
 }
 
 /**
@@ -290,9 +363,17 @@ function build(p: SearchParams, rails: Rails, kinds: readonly Kind[], quota: Map
  * its distance to each rail and which pieces touch are worked out once.
  * A shape group (job 014) is one unit: its pieces share a colour and change
  * colour together, trading with a unit of the same size or with as many
- * single pieces; touching inside it is not clumping.
+ * single pieces; touching inside it is not clumping. Fixed pieces (threads,
+ * job 015) keep the colour they were built with. With shares given, the deal
+ * hands out those counts rather than the build's.
  */
-function mixColours(s: State, target: number, rand: () => number): State | null {
+function mixColours(
+  s: State,
+  target: number,
+  rand: () => number,
+  fixed: ReadonlySet<string>,
+  shares: ReadonlyMap<Colour, number> | null,
+): State | null {
   const sides = (Object.keys(s.rails) as Side[]);
   const sideOf = new Map(sides.map((side) => [s.rails[side], side] as const));
   const n = s.blocks.length;
@@ -317,6 +398,7 @@ function mixColours(s: State, target: number, rand: () => number): State | null 
   const unitNames = [...new Set(s.blocks.map((b, i) => b.group ?? `#${i}`))];
   const unitOf = s.blocks.map((b, i) => unitNames.indexOf(b.group ?? `#${i}`));
   const units = unitNames.map((_, u) => unitOf.flatMap((x, i) => (x === u ? [i] : [])));
+  const pinned = s.blocks.map((b) => fixed.has(b.id));
   // A group may only take a colour whose path runs through its own pieces, so one
   // piece of it still holds another and it reads as one shape.
   const allowed = units.map((u) =>
@@ -368,9 +450,7 @@ function mixColours(s: State, target: number, rand: () => number): State | null 
     touching.length === 0 ? 0 : touching.filter(([i, j]) => colours[i] === colours[j]).length / touching.length;
 
   const colours = s.blocks.map((b) => b.colour);
-  const counts = [...new Set(colours)].map((c) => colours.filter((x) => x === c).length);
-  const clumpMax = counts.reduce((t, k) => t + k * (k - 1), 0) / (n * (n - 1)) + 0.05;
-  if (units.every((u) => u.length === 1)) {
+  if (units.every((u) => u.length === 1) && fixed.size === 0 && !shares) {
     for (let i = n - 1; i > 0; i--) {
       const j = Math.floor(rand() * (i + 1));
       [colours[i], colours[j]] = [colours[j]!, colours[i]!];
@@ -378,8 +458,14 @@ function mixColours(s: State, target: number, rand: () => number): State | null 
   } else {
     // Groups first, each to a colour with enough left; then the single pieces at random.
     const left = new Map<Colour, number>();
-    for (const c of colours) left.set(c, (left.get(c) ?? 0) + 1);
-    for (const u of [...units].filter((u) => u.length > 1).sort((a, b) => b.length - a.length)) {
+    if (shares) {
+      for (const [c, k] of shares) left.set(c, k);
+      colours.forEach((c, i) => { if (pinned[i]) left.set(c, left.get(c)! - 1); });
+      if ([...left.values()].some((k) => k < 0)) return null;
+    } else {
+      colours.forEach((c, i) => { if (!pinned[i]) left.set(c, (left.get(c) ?? 0) + 1); });
+    }
+    for (const u of [...units].filter((u) => u.length > 1 && !pinned[u[0]!]).sort((a, b) => b.length - a.length)) {
       const fits = [...left].filter(([c, k]) => k >= u.length && allowed[units.indexOf(u)]!.has(c)).map(([c]) => c);
       if (fits.length === 0) return null;
       const c = fits[Math.floor(rand() * fits.length)]!;
@@ -391,8 +477,10 @@ function mixColours(s: State, target: number, rand: () => number): State | null 
       const j = Math.floor(rand() * (i + 1));
       [rest[i], rest[j]] = [rest[j]!, rest[i]!];
     }
-    units.filter((u) => u.length === 1).forEach((u, k) => (colours[u[0]!] = rest[k]!));
+    units.filter((u) => u.length === 1 && !pinned[u[0]!]).forEach((u, k) => (colours[u[0]!] = rest[k]!));
   }
+  const counts = [...new Set(colours)].map((c) => colours.filter((x) => x === c).length);
+  const clumpMax = counts.reduce((t, k) => t + k * (k - 1), 0) / (n * (n - 1)) + 0.05;
   /**
    * Trade colours between the units holding pieces a and b; a group may trade
    * with as many single pieces of the other colour (b plus others picked at
@@ -403,13 +491,13 @@ function mixColours(s: State, target: number, rand: () => number): State | null 
     const ub = units[unitOf[b]!]!;
     const ca = colours[a]!;
     const cb = colours[b]!;
-    if (ca === cb || !allowed[unitOf[a]!]!.has(cb) || !allowed[unitOf[b]!]!.has(ca)) return null;
+    if (ca === cb || pinned[a] || pinned[b] || !allowed[unitOf[a]!]!.has(cb) || !allowed[unitOf[b]!]!.has(ca)) return null;
     let sideA = ua;
     let sideB = ub;
     if (ua.length !== ub.length) {
       if (ua.length > 1 && ub.length > 1) return null;
       const [group, single, colour] = ua.length > 1 ? [ua, b, cb] : [ub, a, ca];
-      const others = units.filter((u) => u.length === 1 && u[0] !== single && colours[u[0]!] === colour).map((u) => u[0]!);
+      const others = units.filter((u) => u.length === 1 && u[0] !== single && !pinned[u[0]!] && colours[u[0]!] === colour).map((u) => u[0]!);
       if (others.length < group.length - 1) return null;
       for (let k = others.length - 1; k > 0; k--) {
         const j = Math.floor(rand() * (k + 1));
@@ -492,6 +580,7 @@ export function largestGap(s: State): number {
 function meets(p: SearchParams, s: State): boolean {
   const free = freeCount(s);
   if (free < p.free[0] || free > p.free[1]) return false;
+  if ((p.threads ?? 0) > 0 && threads(s).length < p.threads!) return false;
   return COLOURS.every((c) => s.blocks.some((b) => b.colour === c));
 }
 

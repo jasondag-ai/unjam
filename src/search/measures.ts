@@ -130,3 +130,44 @@ export function clumping(s: State): Clumping {
     random: counts.reduce((t, k) => t + k * (k - 1), 0) / (n * (n - 1)),
   };
 }
+
+export interface Thread {
+  readonly id: string;
+  /** Empty cells from the piece to its rail. */
+  readonly lane: number;
+  /** Pieces whose own lane runs through this one. */
+  readonly holds: readonly string[];
+}
+
+/**
+ * Job 015: threaded pieces. A small piece (1 to 3 cells, one cell wide across
+ * its way out) whose lane is a one-cell channel at least two cells long,
+ * empty, with a filled cell on both sides of every channel cell, and which
+ * stands in another piece's lane. You only see it by tracing the lane, and
+ * taking it is what frees what sits behind.
+ */
+export function threads(s: State): Thread[] {
+  const filled = new Set(s.blocks.flatMap(cellsOf).map((c) => `${c.row},${c.col}`));
+  const inside = (r: number, c: number) => r >= 0 && r < s.rows && c >= 0 && c < s.cols;
+  const lanes = blockers(s);
+  const result: Thread[] = [];
+  for (const b of s.blocks) {
+    const cells = cellsOf(b);
+    if (cells.length > 3) continue;
+    const d = STEP[sideOf(s.rails, b.colour)];
+    const across = d.row === 0 ? 'row' : 'col';
+    if (new Set(cells.map((c) => c[across])).size !== 1) continue;
+    // The leading cell: the one nearest the rail.
+    const lead = cells.reduce((best, c) => (c.row * d.row + c.col * d.col > best.row * d.row + best.col * d.col ? c : best));
+    const side = { row: d.col, col: d.row };
+    let lane = 0;
+    let channel = true;
+    for (let r = lead.row + d.row, k = lead.col + d.col; inside(r, k); r += d.row, k += d.col, lane++) {
+      const walls = [[r + side.row, k + side.col], [r - side.row, k - side.col]] as const;
+      if (filled.has(`${r},${k}`) || !walls.every(([y, x]) => inside(y, x) && filled.has(`${y},${x}`))) channel = false;
+    }
+    const holds = s.blocks.filter((o) => lanes.get(o.id)!.has(b.id)).map((o) => o.id);
+    if (channel && lane >= 2 && holds.length > 0) result.push({ id: b.id, lane, holds });
+  }
+  return result;
+}

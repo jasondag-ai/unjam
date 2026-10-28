@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { State } from '../engine';
-import { blockers, clumping, colourSpread, dependency, railDistance } from './measures';
+import { blockers, clumping, colourSpread, dependency, railDistance, threads } from './measures';
 
 const rails = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
 const bar = (id: string, colour: 'amber' | 'cyan' | 'violet' | 'mint', row: number, col: number) => ({
@@ -60,5 +60,25 @@ describe('clumping', () => {
     const c = clumping(s);
     expect(c.share).toBe(2 / 4); // A-B and C-D of the four touching pairs
     expect(c.random).toBeCloseTo(4 / 12);
+  });
+});
+
+describe('threads', () => {
+  // T (amber, leaves up) at row 2 of column 1, with an empty channel above it walled by two upright
+  // dominoes; H below it waits for T.
+  const upright = (id: string, colour: 'cyan' | 'mint', row: number, col: number) => ({
+    id, colour, anchor: { row, col }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }],
+  });
+  const T = { id: 'T', colour: 'amber' as const, anchor: { row: 2, col: 1 }, shape: [{ row: 0, col: 0 }] };
+  const H = { id: 'H', colour: 'amber' as const, anchor: { row: 3, col: 1 }, shape: [{ row: 0, col: 0 }] };
+  const s: State = { rows: 5, cols: 3, rails, blocks: [upright('L', 'mint', 0, 0), upright('R', 'cyan', 0, 2), T, H] };
+
+  it('finds a small piece whose lane is a walled one-cell channel and that holds another', () => {
+    expect(threads(s)).toEqual([{ id: 'T', lane: 2, holds: ['H'] }]);
+  });
+
+  it('needs both walls, and something behind it', () => {
+    expect(threads({ ...s, blocks: s.blocks.filter((b) => b.id !== 'R') })).toEqual([]);
+    expect(threads({ ...s, blocks: s.blocks.filter((b) => b.id !== 'H') })).toEqual([]);
   });
 });
