@@ -8,33 +8,28 @@ import type { MotifName } from '../src/search/shapes';
 
 const RAILS = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
 
-type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'threads' | 'threadChannel' | 'closedThreads' | 'dealShares' | 'tries'> & { readonly colourMix?: number; readonly groups?: readonly MotifName[] } & { readonly band: 'early' | 'middle' | 'late' };
+type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'threads' | 'threadChannel' | 'closedThreads' | 'dealShares' | 'bars' | 'clumpMargin' | 'blockFirst' | 'tries'> & { readonly colourMix?: number; readonly groups?: readonly MotifName[] } & { readonly band: 'early' | 'middle' | 'late' };
 
-// Rising steadily: 6x7 for levels 1 to 5, 8x9 for 6 to 10, 9x11 for 11 to 15.
-// Fill 36% -> 88%; pieces 8 -> 26, then 39 -> 44 small pieces on 9x11 (job 015). Levels 6 to 15 mix colours (job 012). Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give
-// every colour 20 to 30 percent. Middle levels take the fewest free pieces
-// the search finds (it prefers fewest).
+// Rising steadily: 6x7 for levels 1 to 5, 10x12 for 6 to 10, 12x15 for 11 to 20 (job 018).
+// Fill 36% -> 90%. Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give every colour 20 to 30
+// percent. Levels 6 to 20 mix colours, with same-colour neighbours below a random deal (job 018).
 const CURVE: readonly Plan[] = [
   { band: 'early', pieces: 8, cells: 15, free: [3, 3], ringMax: 0, centrePull: 1, tries: 600 },
   { band: 'early', pieces: 8, cells: 17, free: [3, 3], ringMax: 2, centrePull: 1, tries: 600 },
   { band: 'early', pieces: 8, cells: 18, free: [2, 3], ringMax: 3, centrePull: 1, tries: 600 },
   { band: 'early', pieces: 10, cells: 19, free: [2, 2], ringMax: 4, centrePull: 1, tries: 600 },
   { band: 'early', pieces: 10, cells: 21, free: [2, 2], ringMax: 5, centrePull: 1, tries: 600 },
-  { band: 'middle', pieces: 18, cells: 47, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
-  { band: 'middle', pieces: 20, cells: 50, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
-  { band: 'middle', pieces: 22, cells: 53, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
-  { band: 'middle', pieces: 24, cells: 55, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
-  { band: 'middle', pieces: 26, cells: 57, free: [1, 26], ringMax: 30, centrePull: 0.2, colourMix: 0.9, tries: 300 },
-  // Late, 9x11 (job 015): legibility is the difficulty. 39-44 pieces at 83-88 percent (job 016: down from 86-92 for channels), mostly 1
-  // to 3 cells, so average piece size keeps falling from level 10 (2.2 cells) to 2.1. Two
-  // nests of L's as landmarks (a third leaves too few 2 and 3 cell pieces), and at least two threaded
-  // pieces with channels of 4 or more, one closed at its outer end by a piece, so it cannot be seen
-  // from the edge. Colours mixed; the build takes any colour and mixing deals the shares.
-  { band: 'late', pieces: 39, cells: 82, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, threadChannel: 4, closedThreads: 1, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
-  { band: 'late', pieces: 40, cells: 83, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, threadChannel: 4, closedThreads: 1, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
-  { band: 'late', pieces: 41, cells: 84, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, threadChannel: 4, closedThreads: 1, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
-  { band: 'late', pieces: 42, cells: 86, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, threadChannel: 4, closedThreads: 1, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
-  { band: 'late', pieces: 44, cells: 87, free: [1, 44], ringMax: 40, centrePull: 0.2, colourMix: 0.9, threads: 2, threadChannel: 4, closedThreads: 1, dealShares: true, tries: 800, groups: ['nest3', 'nest2'] },
+  // Middle, 10x12: 65 to 78 percent, average piece 2.6 falling to 2.2.
+  ...([[30, 78], [33, 82], [36, 86], [39, 90], [43, 94]] as const).map(([pieces, cells]): Plan => ({
+    band: 'middle', pieces, cells, free: [1, 60], ringMax: 99, centrePull: 0.2, colourMix: 0.9, clumpMargin: -0.03, tries: 300,
+  })),
+  // Late, 12x15 (job 018): 25 px cells on a 375 px phone, so no single cells. Dominoes and threes,
+  // two nests of L's and two long bars as landmarks, two threaded pieces with 4-cell channels (one
+  // closed). Fill 85 -> 90 percent, average piece about 2.3 cells.
+  ...[153, 154, 155, 156, 157, 158, 159, 160, 161, 162].map((cells): Plan => ({
+    band: 'late', pieces: Math.round(cells / 2.31), cells, free: [1, 70], ringMax: 99, centrePull: 0.2, colourMix: 0.9, clumpMargin: -0.03,
+    threads: 2, threadChannel: 4, closedThreads: 1, dealShares: true, bars: 2, blockFirst: false, tries: 400, groups: ['nest3', 'nest2'],
+  })),
 ];
 
 const out: string[] = [
@@ -62,6 +57,7 @@ CURVE.forEach((plan, i) => {
   if (!result) throw new Error(`No board for level ${i + 1}`);
   const s = result.state;
   const filled = s.blocks.reduce((n, b) => n + b.shape.length, 0);
+  console.error(`level ${i + 1}: ${s.blocks.length} pieces, ${filled} cells`);
   out.push(`  // Level ${i + 1} (${band.name}, ${s.cols}x${s.rows}): ${s.blocks.length} pieces, ${filled} of ${s.cols * s.rows} cells, ${result.pinned} pinned.`);
   for (const line of boardToText(s).split('\n')) out.push(`  //   ${line}`);
   out.push(`  {`, `    id: '${i + 1}',`, `    start: {`, `      rows: ${s.rows},`, `      cols: ${s.cols},`);

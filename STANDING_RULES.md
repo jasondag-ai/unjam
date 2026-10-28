@@ -7,10 +7,10 @@ is checked against all of them.
 2. Minimum touch target 44 CSS px per piece, not per cell:
    a piece's target spans at least 44 px along its longest
    side, expanded away from neighbours. Cells may be as
-   small as 28 px on a 375 px phone, so a single-cell piece
-   is allowed only where a cell is 44 px or larger, except
-   on late boards (job 015): there single cells are allowed
-   at 33 px and nearest-centre resolution carries them. A
+   small as 24 px on a 375 px phone, so a board is never
+   more than 14 wide (job 018). A single-cell piece is
+   allowed only where a cell is 30 px or larger. While a
+   finger is down, the piece it would commit to is lit. A
    tap between two blocks resolves to the nearer block
    centre.
 3. The engine stays pure. No DOM, canvas, browser globals

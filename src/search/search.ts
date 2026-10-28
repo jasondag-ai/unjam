@@ -57,12 +57,6 @@ export interface SearchParams {
   /** Job 018: at least this many long bars (4 or 5 cells) outside the shape groups, as landmarks. */
   readonly bars?: number;
   /**
-   * Job 018: a build may stop short of `pieces` and `cells` once this many
-   * cells are filled (needs dealShares). Pieces that no longer fit are left
-   * out, so the board's count is what fits.
-   */
-  readonly minCells?: number;
-  /**
    * Place each piece where it blocks the most free pieces (default). Job 018
    * turns this off for 12x15 boards without single cells: it walls in the
    * middle early and the last pieces find no lane.
@@ -126,10 +120,8 @@ export function searchBoard(params: SearchParams, rails: Rails): SearchResult | 
     if (!kinds) continue;
     const shares = colourQuota(params, rand)!;
     const built = build(params, rails, kinds, shares, rand);
-    // A build that stopped early (minCells) deals shares for the pieces it has.
-    const dealt = built && built.state.blocks.length < params.pieces ? colourQuota({ ...params, pieces: built.state.blocks.length }, rand) : shares;
-    const state = built && dealt && params.colourMix > 0
-      ? mixColours(built.state, params.colourMix, rand, built.fixed, params.dealShares ? dealt : null, params.clumpMargin ?? 0.05)
+    const state = built && params.colourMix > 0
+      ? mixColours(built.state, params.colourMix, rand, built.fixed, params.dealShares ? shares : null, params.clumpMargin ?? 0.05)
       : built?.state;
     if (!state || !meets(params, state)) continue;
     const pinned = state.blocks.filter((b) => blockerCount(state, b) >= 2).length;
@@ -379,13 +371,7 @@ function build(
         }
       }
     }
-    if (options.length === 0) {
-      // Job 018: a board already full enough may stop here, leaving out the pieces that no longer
-      // fit, once its threads are down and its groups placed.
-      const filled = taken.size;
-      if (p.minCells !== undefined && filled >= p.minCells && threadsLeft === 0 && groupsLeft.length === 0) break;
-      return null;
-    }
+    if (options.length === 0) return null;
     // Block as many free pieces as possible; among those spots, touch
     // neighbours and keep to the middle, with a little chance. A thread's spot
     // comes first while one is still to plant, then walls for its channel.
