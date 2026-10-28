@@ -133,18 +133,21 @@ export function clumping(s: State): Clumping {
 
 export interface Thread {
   readonly id: string;
-  /** Empty cells from the piece to its rail. */
-  readonly lane: number;
+  /** Empty, walled cells from the piece toward its rail: the channel. */
+  readonly channel: number;
+  /** True if the channel runs to the board edge; false if a piece closes its outer end (job 016). */
+  readonly open: boolean;
   /** Pieces whose own lane runs through this one. */
   readonly holds: readonly string[];
 }
 
 /**
- * Job 015: threaded pieces. A small piece (1 to 3 cells, one cell wide across
- * its way out) whose lane is a one-cell channel at least two cells long,
- * empty, with a filled cell on both sides of every channel cell, and which
- * stands in another piece's lane. You only see it by tracing the lane, and
- * taking it is what frees what sits behind.
+ * Jobs 015 and 016: threaded pieces. A small piece (1 to 3 cells, one cell
+ * wide across its way out) whose lane starts with a channel: a run of at
+ * least two empty cells with a filled cell on both sides of each, ending at
+ * the board edge (open) or at a piece (closed, so it cannot be seen from the
+ * edge). It stands in another piece's lane, so taking it frees what sits
+ * behind.
  */
 export function threads(s: State): Thread[] {
   const filled = new Set(s.blocks.flatMap(cellsOf).map((c) => `${c.row},${c.col}`));
@@ -160,14 +163,16 @@ export function threads(s: State): Thread[] {
     // The leading cell: the one nearest the rail.
     const lead = cells.reduce((best, c) => (c.row * d.row + c.col * d.col > best.row * d.row + best.col * d.col ? c : best));
     const side = { row: d.col, col: d.row };
-    let lane = 0;
-    let channel = true;
-    for (let r = lead.row + d.row, k = lead.col + d.col; inside(r, k); r += d.row, k += d.col, lane++) {
+    let channel = 0;
+    let walled = true;
+    let r = lead.row + d.row;
+    let k = lead.col + d.col;
+    for (; inside(r, k) && !filled.has(`${r},${k}`); r += d.row, k += d.col, channel++) {
       const walls = [[r + side.row, k + side.col], [r - side.row, k - side.col]] as const;
-      if (filled.has(`${r},${k}`) || !walls.every(([y, x]) => inside(y, x) && filled.has(`${y},${x}`))) channel = false;
+      if (!walls.every(([y, x]) => inside(y, x) && filled.has(`${y},${x}`))) walled = false;
     }
     const holds = s.blocks.filter((o) => lanes.get(o.id)!.has(b.id)).map((o) => o.id);
-    if (channel && lane >= 2 && holds.length > 0) result.push({ id: b.id, lane, holds });
+    if (walled && channel >= 2 && holds.length > 0) result.push({ id: b.id, channel, open: !inside(r, k), holds });
   }
   return result;
 }

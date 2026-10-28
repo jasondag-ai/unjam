@@ -41,6 +41,13 @@ export interface SearchParams {
    * least this many. Left out, none are planted.
    */
   readonly threads?: number;
+  /** Job 016: each thread's channel is at least this many cells (default 2). */
+  readonly threadChannel?: number;
+  /**
+   * Job 016: this many of the threads have a channel closed at its outer end
+   * by a piece, so it cannot be seen from the board edge.
+   */
+  readonly closedThreads?: number;
   /**
    * Job 015: build with any colour and let mixing deal each colour its
    * share. Needs colourMix. Off, the build keeps to the quota (levels 6 to
@@ -192,11 +199,14 @@ function build(
   const remaining = [...kinds];
   const groupsLeft = [...p.groups];
   const used = new Map<Colour, number>();
-  // Threads (job 015): planted at the first spots that qualify once a quarter of the board is
-  // down, in front of a piece already there. The lane is kept empty, the next pieces wall it in
-  // on both sides, and the thread and the piece it holds keep their colours through mixing.
+  // Threads (jobs 015, 016): planted at the first spots that qualify once a quarter of the board
+  // is down, in front of a piece already there. The channel is kept empty, the next pieces wall it
+  // in on both sides (and close its outer end, for a closed one, planted first), and the thread
+  // and the piece it holds keep their colours through mixing.
   const total = kinds.length + p.groups.length;
   let threadsLeft = p.threads ?? 0;
+  let closedLeft = p.closedThreads ?? 0;
+  const channelLength = p.threadChannel ?? 2;
   const reserved = new Set<number>();
   const flanks = new Set<number>();
   const fixed = new Set<string>();
@@ -228,16 +238,25 @@ function build(
     return out;
   };
   /**
-   * A thread's spot: 1 to 3 cells, one cell wide across its way out, a lane
-   * of at least two cells clear of the edge rows and columns and of other
-   * threads' walls, and in front of a piece already down.
+   * A thread's spot: 1 to 3 cells, one cell wide across its way out, in
+   * front of a piece already down, with a channel of `channelLength` cells
+   * or more clear of the edge rows and columns and of other threads. An open
+   * channel is the whole lane; a closed one is the first `channelLength`
+   * cells, and the next cell (the cap) must still be free to fill. Gives the
+   * channel cells and the cap, or null.
    */
   const channel = (cells: readonly Cell[], d: Cell, path: ReadonlySet<number>, blocked: number) => {
     const across = d.row === 0 ? 'row' : 'col';
-    if (cells.length > 3 || blocked === 0 || path.size < 2 || new Set(cells.map((c) => c[across])).size !== 1) return false;
-    if ([...path].some((k) => reserved.has(k) || flanks.has(k))) return false;
-    const walls = sidesOf(path, d);
-    return walls !== null && walls.every((k) => !reserved.has(k));
+    const closed = closedLeft > 0;
+    if (cells.length > 3 || blocked === 0 || path.size < channelLength + (closed ? 1 : 0)) return null;
+    if (new Set(cells.map((c) => c[across])).size !== 1) return null;
+    const lane = [...path].sort((a, b) => (Math.floor(a / 100) - Math.floor(b / 100)) * d.row + ((a % 100) - (b % 100)) * d.col);
+    const run = new Set(closed ? lane.slice(0, channelLength) : lane);
+    const cap = closed ? lane[channelLength]! : null;
+    if ([...run, ...(cap === null ? [] : [cap])].some((k) => reserved.has(k) || flanks.has(k))) return null;
+    const walls = sidesOf(run, d);
+    if (walls === null || walls.some((k) => reserved.has(k))) return null;
+    return { run, walls, cap };
   };
   type Option = {
     pieces: { cells: Cell[]; anchor: Cell; shape: Cell[]; path: Set<number> }[];
@@ -246,7 +265,7 @@ function build(
     blocked: number;
     walls: number;
     score: number;
-    thread: boolean;
+    thread: ReturnType<typeof channel>;
   };
 
   for (let step = 0; step < total; step++) {
@@ -275,7 +294,7 @@ function build(
               if (!p.dealShares && (used.get(colour) ?? 0) >= quota.get(colour)!) continue;
               const path = pathOf(cells, STEP[sideOf.get(colour)!]);
               if ([...path].some((k) => taken.has(k))) continue;
-              const thread = threading && channel(cells, STEP[sideOf.get(colour)!], path, blocked);
+              const thread = threading ? channel(cells, STEP[sideOf.get(colour)!], path, blocked) : null;
               // The chance term is drawn per valid colour, as before groups existed, so boards
               // without groups come out exactly as they did.
               options.push({ pieces: [{ cells, anchor: { row, col }, shape, path }], colour, unit: { kind }, blocked, walls, score: base + rand() * 2, thread });
@@ -307,7 +326,7 @@ function build(
                 for (const c of pieces[i]!) down.add(key(c.row, c.col));
               }
               if (ordered.length < order.length) continue;
-              options.push({ pieces: ordered, colour, unit: { motif }, blocked, walls, score: base + rand() * 2, thread: false });
+              options.push({ pieces: ordered, colour, unit: { motif }, blocked, walls, score: base + rand() * 2, thread: null });
             }
           }
         }
@@ -324,15 +343,16 @@ function build(
     const best = pool.filter((o) => o.blocked === most).sort((a, b) => b.score - a.score);
     const pick = best[Math.floor(rand() * Math.min(3, best.length))]!;
     const group = 'motif' in pick.unit ? `g${++groupCount}` : undefined;
-    if (planting) {
+    if (pick.thread) {
       threadsLeft--;
+      if (pick.thread.cap !== null) closedLeft--;
       fixed.add(`p${pieceCount}`);
       const held = freeIds.find((i) => pick.pieces[0]!.cells.some((c) => paths[i]!.has(key(c.row, c.col))))!;
       // A held piece in a shape group keeps the whole group's colour.
       const heldGroup = placed[held]!.group;
       for (const b of placed) if (b.id === `p${held}` || (heldGroup && b.group === heldGroup)) fixed.add(b.id);
-      for (const k of pick.pieces[0]!.path) reserved.add(k);
-      for (const k of sidesOf(pick.pieces[0]!.path, STEP[sideOf.get(pick.colour)!])!) flanks.add(k);
+      for (const k of pick.thread.run) reserved.add(k);
+      for (const k of [...pick.thread.walls, ...(pick.thread.cap === null ? [] : [pick.thread.cap])]) flanks.add(k);
     }
     for (const piece of pick.pieces) {
       placed.push({ id: `p${pieceCount++}`, colour: pick.colour, anchor: piece.anchor, shape: piece.shape, ...(group ? { group } : {}) });
@@ -580,7 +600,10 @@ export function largestGap(s: State): number {
 function meets(p: SearchParams, s: State): boolean {
   const free = freeCount(s);
   if (free < p.free[0] || free > p.free[1]) return false;
-  if ((p.threads ?? 0) > 0 && threads(s).length < p.threads!) return false;
+  if ((p.threads ?? 0) > 0) {
+    const found = threads(s).filter((t) => t.channel >= (p.threadChannel ?? 2));
+    if (found.length < p.threads! || found.filter((t) => !t.open).length < (p.closedThreads ?? 0)) return false;
+  }
   return COLOURS.every((c) => s.blocks.some((b) => b.colour === c));
 }
 

@@ -74,7 +74,16 @@ describe('threads', () => {
   const s: State = { rows: 5, cols: 3, rails, blocks: [upright('L', 'mint', 0, 0), upright('R', 'cyan', 0, 2), T, H] };
 
   it('finds a small piece whose lane is a walled one-cell channel and that holds another', () => {
-    expect(threads(s)).toEqual([{ id: 'T', lane: 2, holds: ['H'] }]);
+    expect(threads(s)).toEqual([{ id: 'T', channel: 2, open: true, holds: ['H'] }]);
+  });
+
+  it('sees a channel closed at its outer end by a piece', () => {
+    const tall: State = { rows: 6, cols: 3, rails, blocks: [
+      { id: 'C', colour: 'mint', anchor: { row: 0, col: 1 }, shape: [{ row: 0, col: 0 }] },
+      upright('L', 'mint', 1, 0), upright('R', 'cyan', 1, 2),
+      { ...T, anchor: { row: 3, col: 1 } }, { ...H, anchor: { row: 4, col: 1 } },
+    ] };
+    expect(threads(tall)).toEqual([{ id: 'T', channel: 2, open: false, holds: ['H'] }]);
   });
 
   it('needs both walls, and something behind it', () => {
