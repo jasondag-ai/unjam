@@ -345,9 +345,27 @@ pieces making bigger blocks), then "let's try and see how it looks" to the propo
 58. Late builds use `dealShares`; with the quota held during the build, most late builds ran out
     of spots near the end.
 
+## Job 016: real channels (2026-10-27)
+- Channels 4+ cells; at least one per late board closed at its outer end by a piece, so it is
+  hidden from the edge. `threads()` now reports `channel` (length) and `open`. Search params
+  `threadChannel` (4) and `closedThreads` (1); closed threads are planted first, their cap cell
+  filled before walls.
+- Late fill 82-88 percent (band and tests): levels 11-15 are 39/82, 40/83, 41/84, 42/86, 44/87.
+  Average piece 2.10 -> 1.98, still falling every level from 6. Levels 1-10 unchanged.
+- Channels per level (all length 4): 11 R open, b closed; 12 O open, P closed; 13 Q open, g closed;
+  14 B closed, X open; 15 P open, l closed. On 13 and 15 the open thread is the cap of the closed
+  channel below it (same column).
+- Palette: sky blue #40B4FF back as cyan (Jason liked v0.0.8's blue). Amber #F2A93B 9.9, violet
+  #B3A3FF 9.0, cyan 8.6, mint #4ABF6A 8.4; OKLab lightness 0.79 / 0.77 / 0.74 / 0.72.
+- 219 tests.
+
+## Job 016 decisions
+59. "Does not open at the edge" read as: the channel's outer end is a piece, so you only find it by
+    tracing a lane inward. That piece must leave first.
+60. One closed and one open channel per board, as asked (at least one closed).
+
 ## Needs from Jason
-- Play 11 to 15 on the phone: harder to read than 10? Can you find a thread? Are the four colours
-  equally legible?
+- Play 11 to 15 on the phone: can you find the closed channel from the edge? Is the blue right?
 
 ## Next step
 - On Jason's word: next job.

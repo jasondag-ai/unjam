@@ -17,7 +17,7 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
   | Band | Grid (wide x tall) | Pieces | Fill |
   | early | 6x7 | 6 to 10 | 35-50% |
   | middle | 8x9 | 18 to 26 | 65-80% |
-  | late | 9x11 | 34 to 44 | 85-92% | (job 015: many small pieces, threads) |
+  | late | 9x11 | 34 to 44 | 82-88% | (jobs 015-016: many small pieces, threads) |
 - Every colour gets 20 to 30 percent of each board's pieces.
 - Pieces are mostly 2 and 3 cells, with some 4 and 5 cell bars and L shapes. Single cells where a
   cell is 44 px or more (early boards) and on late boards (job 015). Average piece size falls
@@ -28,6 +28,7 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Late band (job 015): levels 11 to 15, 39 to 44 pieces, mostly 1 to 3 cells, two nests of L's
   (7/5/3 and 5/3, one colour each) as landmarks, and at least two threaded pieces: a small piece
   whose lane is a walled one-cell channel and which holds another (`threads()` in measures.ts).
+  Job 016: channels 4+ cells, at least one closed at its outer end by a piece (hidden from the edge).
 - Colours are mixed on levels 6 to 15 (job 012): colour must not follow position. Measures in
   `src/search/measures.ts`: spread ratio per colour (own-rail distance against the board's, at
   least 0.9), same-colour neighbours (within 5 points of a random deal), and dependency depth
@@ -78,9 +79,10 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Job 013: sky blue, level picker (testing only; gate before public release).
 - Job 014: late band shaped like the reference (nests of L's, staircases, big L's).
 - Job 015: legibility is the difficulty: many small late pieces, threads, palette contrast.
+- Job 016: real channels (4+ cells, one hidden from the edge), sky blue back.
 - The look (M1, final): ground #060B14, faint grid behind the board; blocks are rounded shapes with
-  a 1.5px lit border, translucent fill of the same colour and an outer glow; cyan #4CD6E6, amber
-  #F2A93B, violet #B5A5FF, mint #4FC86E (job 015: contrast 9.2-11.3 on the ground, apart in lightness); rails are glowing bars; every block carries its colour's
+  a 1.5px lit border, translucent fill of the same colour and an outer glow; sky blue #40B4FF (`cyan` in code), amber
+  #F2A93B, violet #B3A3FF, mint #4ABF6A (job 016: contrast 8.4-9.9 on the ground, apart in lightness); rails are glowing bars; every block carries its colour's
   glyph (square, triangle, circle, diamond), always on; exits under 300 ms, a blocked tap shakes 4 px.
 - Not built yet: drag input (keep rule 19; flag the conflict and ask), worlds, sound, menus.
 
