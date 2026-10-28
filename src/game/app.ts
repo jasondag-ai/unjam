@@ -144,7 +144,8 @@ export function startGame(hud: Hud, world: World): void {
     const draws: Draw[] = [];
     for (const block of current(attempt.history).blocks) {
       const shake = anims.find((a) => a.kind === 'shake' && a.id === block.id);
-      draws.push(shake ? shakeDraw(block, now - shake.start, reduced) : { block, dx: 0, dy: 0, alpha: 1, clip: false });
+      const pressed = [...presses.values()].some((p) => p.over === block.id);
+      draws.push(shake ? { ...shakeDraw(block, now - shake.start, reduced), pressed } : { block, dx: 0, dy: 0, alpha: 1, clip: false, pressed });
     }
     for (const a of anims) {
       if (a.kind === 'exit') draws.push(exitDraw(a.block, a.side, now - a.start, reduced));
@@ -185,7 +186,9 @@ export function startGame(hud: Hud, world: World): void {
   // Input. The piece is chosen where the finger goes down; the tap commits on
   // lift only if the finger is still on that piece (rule 19: sliding off
   // cancels at no cost). Each pointer is tracked, so two fingers chain.
-  const downs = new Map<number, string | null>();
+  // While a finger is down, the piece lifting would commit to is lit, and
+  // goes dark when the finger slides off it (job 018).
+  const presses = new Map<number, { down: string | null; over: string | null }>();
   const pointAt = (e: PointerEvent) => {
     const rect = hud.canvas.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -198,16 +201,31 @@ export function startGame(hud: Hud, world: World): void {
     }));
   hud.canvas.addEventListener('pointerdown', (e) => {
     const { x, y } = pointAt(e);
-    downs.set(e.pointerId, hitTest(targets(), x, y, layout.cell));
+    const down = hitTest(targets(), x, y, layout.cell);
+    presses.set(e.pointerId, { down, over: down });
+    requestFrame();
+  });
+  hud.canvas.addEventListener('pointermove', (e) => {
+    const press = presses.get(e.pointerId);
+    if (!press) return;
+    const { x, y } = pointAt(e);
+    const over = tapOnRelease(targets(), press.down, x, y, layout.cell);
+    if (over === press.over) return;
+    presses.set(e.pointerId, { ...press, over });
+    requestFrame();
   });
   hud.canvas.addEventListener('pointerup', (e) => {
-    const downId = downs.get(e.pointerId) ?? null;
-    downs.delete(e.pointerId);
+    const downId = presses.get(e.pointerId)?.down ?? null;
+    presses.delete(e.pointerId);
     const { x, y } = pointAt(e);
     const id = tapOnRelease(targets(), downId, x, y, layout.cell);
     if (id) tap(id, performance.now());
+    requestFrame();
   });
-  hud.canvas.addEventListener('pointercancel', (e) => downs.delete(e.pointerId));
+  hud.canvas.addEventListener('pointercancel', (e) => {
+    presses.delete(e.pointerId);
+    requestFrame();
+  });
 
   hud.undo.addEventListener('click', () => resetTo(undoAttempt(attempt)));
   hud.restart.addEventListener('click', () => {

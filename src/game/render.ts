@@ -10,6 +10,8 @@ export interface Draw {
   readonly alpha: number;
   /** Clip to the board so an exiting block disappears into its rail. */
   readonly clip: boolean;
+  /** A finger is down on it and lifting now would commit to it (job 018). */
+  readonly pressed?: boolean;
 }
 
 const GLOW = 10;
@@ -43,7 +45,7 @@ export class Renderer {
     const { board } = layout;
     for (const d of draws) {
       const r = blockRect(layout, d.block);
-      const sprite = this.sprite(d.block, r);
+      const sprite = this.sprite(d.block, r, d.pressed ?? false);
       ctx.globalAlpha = d.alpha;
       if (d.clip) {
         ctx.save();
@@ -57,9 +59,10 @@ export class Renderer {
     ctx.globalAlpha = 1;
   }
 
-  private sprite(block: Block, r: Rect): HTMLCanvasElement {
+  /** A pressed block is the same sprite, lit up: a denser fill, a thicker border and more glow. */
+  private sprite(block: Block, r: Rect, pressed: boolean): HTMLCanvasElement {
     const shapeKey = block.shape.map((c) => `${c.row}.${c.col}`).join(' ');
-    const key = `${block.colour}:${shapeKey}`;
+    const key = `${block.colour}:${shapeKey}${pressed ? ':pressed' : ''}`;
     const cached = this.sprites.get(key);
     if (cached) return cached;
     const layout = this.layout!;
@@ -77,7 +80,7 @@ export class Renderer {
     const radius = (layout.cell - 2 * layout.inset) * 0.18;
 
     // Translucent fill of the block's own colour.
-    g.globalAlpha = 0.16;
+    g.globalAlpha = pressed ? 0.45 : 0.16;
     g.fillStyle = colour;
     roundPolygon(g, outline, radius);
     g.fill();
@@ -85,10 +88,11 @@ export class Renderer {
     // Outer glow, then the lit border on top of it.
     g.globalAlpha = 1;
     g.shadowColor = colour;
-    g.shadowBlur = GLOW;
+    g.shadowBlur = pressed ? GLOW * 1.6 : GLOW;
     g.strokeStyle = colour;
-    g.lineWidth = BORDER;
-    roundPolygon(g, insetPolygon(outline, BORDER / 2), radius);
+    const border = pressed ? BORDER * 2 : BORDER;
+    g.lineWidth = border;
+    roundPolygon(g, insetPolygon(outline, border / 2), radius);
     g.stroke();
     g.shadowBlur = GLOW / 2;
     g.stroke();
