@@ -114,10 +114,41 @@ export function applyExit(state: State, blockId: string): State | null {
   const exiting = exitingPart(state, blockId);
   if (!exiting) return null;
   const left = remainder(findBlock(state, blockId)!, exiting.part.colour);
-  return {
+  return settle({
     ...state,
     blocks: left ? state.blocks.map((b) => (b.id === blockId ? left : b)) : state.blocks.filter((b) => b.id !== blockId),
-  };
+  });
+}
+
+/**
+ * Job 022: let every piece fall toward the gravity rail, one cell at a time,
+ * until none can move. Pieces nearest that rail go first in each pass, so a
+ * stack comes down together. The same state comes back when nothing moves
+ * (or the board has no gravity).
+ */
+export function settle(state: State): State {
+  if (!state.gravity) return state;
+  const d = DELTA[DIRECTION_TO[state.gravity]];
+  // How far a cell is along the pull: larger is nearer the gravity rail.
+  const depth = (b: Block) => Math.max(...cellsOf(b).map((c) => c.row * d.row + c.col * d.col));
+  let blocks = [...state.blocks];
+  for (let moved = true; moved; ) {
+    moved = false;
+    const order = blocks.map((_, i) => i).sort((i, j) => depth(blocks[j]!) - depth(blocks[i]!));
+    for (const i of order) {
+      const now = { ...state, blocks };
+      if (legalSlides(now, blocks[i]!.id)[DIRECTION_TO[state.gravity]] < 1) continue;
+      const b = blocks[i]!;
+      blocks = blocks.map((x, k) => (k === i ? { ...b, anchor: { row: b.anchor.row + d.row, col: b.anchor.col + d.col } } : x));
+      moved = true;
+    }
+  }
+  return blocks.every((b, i) => b === state.blocks[i]) ? state : { ...state, blocks };
+}
+
+/** Job 022: nothing would fall. A gravity level must start this way. */
+export function isSettled(state: State): boolean {
+  return settle(state) === state;
 }
 
 /** What stays of a block once its part of this colour has gone, or null if nothing does. */

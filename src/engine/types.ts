@@ -46,6 +46,11 @@ export interface State {
   readonly cols: number;
   readonly blocks: readonly Block[];
   readonly rails: Rails;
+  /**
+   * Job 022 (spike): after every exit, pieces settle toward this rail until
+   * none can move. Left out, nothing falls.
+   */
+  readonly gravity?: Side;
 }
 
 /** Cells a block can slide in each direction before it hits a block or the frame. */
