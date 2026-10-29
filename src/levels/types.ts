@@ -21,4 +21,9 @@ export interface World {
 export interface Level {
   readonly id: string;
   readonly start: State;
+  /**
+   * Job 022 (spike): taps that clear a gravity board. On a gravity board the
+   * order matters, so the build's order is kept with the level.
+   */
+  readonly solution?: readonly string[];
 }

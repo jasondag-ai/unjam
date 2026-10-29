@@ -13,7 +13,8 @@
     "demo": "tsx src/engine/demo.ts",
     "levels": "sh tools/make-levels.sh",
     "release": "sh tools/release.sh",
-    "check-live": "sh tools/check-live.sh"
+    "check-live": "sh tools/check-live.sh",
+    "gravity": "sh tools/make-gravity.sh"
   },
   "devDependencies": {
     "tsx": "^4.23.15",

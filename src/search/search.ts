@@ -196,7 +196,7 @@ export function colourQuota(p: Pick<SearchParams, 'pieces' | 'colourShare'>, ran
  * nudged one cell at a time (within the allowed sizes) until the board adds
  * up to exactly `cells`.
  */
-function pickKinds(params: SearchParams, rand: () => number): Kind[] | null {
+export function pickKinds(params: SearchParams, rand: () => number): Kind[] | null {
   const p = {
     ...params,
     pieces: params.pieces - params.groups.reduce((n, g) => n + MOTIF_PIECES[g], 0),
