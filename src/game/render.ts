@@ -1,4 +1,4 @@
-import type { Block, Rails, Side } from '../engine';
+import { cellsOf, partsOf, type Block, type Rails, type Side } from '../engine';
 import type { Glyph, World } from '../levels/types';
 import { blockMark, blockOutline, blockRect, type Layout, type Point, type Rect } from './layout';
 
@@ -62,7 +62,7 @@ export class Renderer {
   /** A pressed block is the same sprite, lit up: a denser fill, a thicker border and more glow. */
   private sprite(block: Block, r: Rect, pressed: boolean): HTMLCanvasElement {
     const shapeKey = block.shape.map((c) => `${c.row}.${c.col}`).join(' ');
-    const key = `${block.colour}:${shapeKey}${pressed ? ':pressed' : ''}`;
+    const key = `${block.colours?.join('.') ?? block.colour}:${shapeKey}${pressed ? ':pressed' : ''}`;
     const cached = this.sprites.get(key);
     if (cached) return cached;
     const layout = this.layout!;
@@ -75,8 +75,40 @@ export class Renderer {
     g.scale(dpr, dpr);
     // Sprite space: the block's bounding box starts at (pad, pad).
     g.translate(pad - r.x, pad - r.y);
-    const colour = this.world.palette.blocks[block.colour];
     const outline = blockOutline(layout, block);
+    const parts = partsOf(block);
+    if (parts.length === 1) {
+      this.paintPiece(g, block, outline, block.colour, pressed);
+    } else {
+      // Job 021: a split piece. Each part paints the whole piece in its own colour, clipped to
+      // its own cells (and the glow beyond their outer sides), so the outline runs around the
+      // whole shape and changes colour where the parts meet. A dimmer seam marks the join.
+      for (const part of parts) {
+        g.save();
+        territory(g, layout, block, part, pad);
+        g.clip();
+        this.paintPiece(g, part, outline, part.colour, pressed);
+        g.save();
+        roundPolygon(g, outline, (layout.cell - 2 * layout.inset) * 0.18);
+        g.clip();
+        g.globalAlpha = 0.5;
+        g.shadowBlur = 0;
+        g.strokeStyle = this.world.palette.blocks[part.colour];
+        g.lineWidth = 2;
+        seams(g, layout, block);
+        g.stroke();
+        g.restore();
+        g.restore();
+      }
+    }
+    this.sprites.set(key, canvas);
+    return canvas;
+  }
+
+  /** Fill, glow, lit border and glyph in one colour. The glyph goes on `mark`'s cell nearest its middle. */
+  private paintPiece(g: CanvasRenderingContext2D, mark: Block, outline: readonly Point[], colourName: Block['colour'], pressed: boolean): void {
+    const layout = this.layout!;
+    const colour = this.world.palette.blocks[colourName];
     const radius = (layout.cell - 2 * layout.inset) * 0.18;
 
     // Translucent fill of the block's own colour.
@@ -99,11 +131,8 @@ export class Renderer {
 
     // Glyph mark (rule 1), always drawn, in the cell nearest the block's middle.
     g.shadowBlur = 4;
-    const mark = blockMark(layout, block);
-    drawGlyph(g, this.world.glyphs[block.colour], mark.x, mark.y, (layout.cell - 2 * layout.inset) * 0.36, colour, 2);
-
-    this.sprites.set(key, canvas);
-    return canvas;
+    const at = blockMark(layout, mark);
+    drawGlyph(g, this.world.glyphs[colourName], at.x, at.y, (layout.cell - 2 * layout.inset) * 0.36, colour, 2);
   }
 
   private paintBackground(layout: Layout, rails: Rails): HTMLCanvasElement {
@@ -170,6 +199,45 @@ function railGeometry(layout: Layout, side: Side): { bar: Rect; mark: Point } {
       return { bar: { x: board.x - t / 2, y: board.y + gap, w: t, h: board.h - 2 * gap }, mark: { x: board.x - out, y: midY } };
     case 'right':
       return { bar: { x: board.x + board.w - t / 2, y: board.y + gap, w: t, h: board.h - 2 * gap }, mark: { x: board.x + board.w + out, y: midY } };
+  }
+}
+
+/**
+ * Path of one part's ground: each of its cells, pushed out by `pad` on every
+ * side that faces away from the whole piece, so its glow is its own.
+ */
+function territory(g: CanvasRenderingContext2D, layout: Layout, block: Block, part: Block, pad: number): void {
+  const all = new Set(cellsOf(block).map((c) => `${c.row},${c.col}`));
+  const out = (row: number, col: number) => (all.has(`${row},${col}`) ? 0 : pad);
+  const { board, cell } = layout;
+  g.beginPath();
+  for (const { row, col } of cellsOf(part)) {
+    const top = out(row - 1, col);
+    const left = out(row, col - 1);
+    g.rect(board.x + col * cell - left, board.y + row * cell - top, cell + left + out(row, col + 1), cell + top + out(row + 1, col));
+  }
+}
+
+/** Path along every cell edge where two parts of a split piece meet. */
+function seams(g: CanvasRenderingContext2D, layout: Layout, block: Block): void {
+  const colourAt = new Map<string, string>();
+  cellsOf(block).forEach((c, i) => colourAt.set(`${c.row},${c.col}`, block.colours![i]!));
+  const { board, cell } = layout;
+  g.beginPath();
+  for (const [k, colour] of colourAt) {
+    const [row, col] = k.split(',').map(Number) as [number, number];
+    const right = colourAt.get(`${row},${col + 1}`);
+    const below = colourAt.get(`${row + 1},${col}`);
+    const x = board.x + (col + 1) * cell;
+    const y = board.y + (row + 1) * cell;
+    if (right && right !== colour) {
+      g.moveTo(x, y - cell);
+      g.lineTo(x, y);
+    }
+    if (below && below !== colour) {
+      g.moveTo(x - cell, y);
+      g.lineTo(x, y);
+    }
   }
 }
 
