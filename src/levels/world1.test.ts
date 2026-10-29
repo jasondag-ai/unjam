@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { applyExit, boardToText, canExit, cellsOf, isSolved, isStuck, validateState, type Block, type State } from '../engine';
+import { applyExit, boardToText, canExit, cellsOf, isSolved, isStuck, partsOf, validateState, type Block, type State } from '../engine';
 import { computeLayout } from '../game/layout';
-import { blockers, cages, clumping, colourSpread, dependency, shapeMix, threads } from '../search/measures';
+import { blockers, cages, clumping, colourSpread, dependency, shapeMix, splits, threads } from '../search/measures';
 import { isThick } from '../search/shapes';
 import { makeRandom, tapSolution } from '../search/search';
 import { BANDS, COLOUR_SHARE, type Band } from './bands';
@@ -27,8 +27,8 @@ function inBand(s: State, band: Band): void {
 }
 
 describe('world1', () => {
-  it('has 20 levels, numbered 1 to 20', () => {
-    expect(levels.map((l) => l.id)).toEqual(Array.from({ length: 20 }, (_, i) => String(i + 1)));
+  it('has 23 levels, numbered 1 to 23', () => {
+    expect(levels.map((l) => l.id)).toEqual(Array.from({ length: 23 }, (_, i) => String(i + 1)));
   });
 
   it('every colour has a distinct glyph', () => {
@@ -53,8 +53,8 @@ describe('world1', () => {
       for (const b of s.blocks) expect(within(b.shape.length, [1, 7])).toBe(true);
     });
 
-    it('clears by taps alone, one tap per piece', () => {
-      expect(tapSolution(s)).toHaveLength(s.blocks.length);
+    it('clears by taps alone, one tap per piece (two for a split piece)', () => {
+      expect(tapSolution(s)).toHaveLength(s.blocks.reduce((n, b) => n + partsOf(b).length, 0));
     });
 
     it('cannot be stranded by taps: any free piece, in any order, still clears it', () => {
@@ -73,8 +73,8 @@ describe('world1', () => {
 });
 
 describe('the curve', () => {
-  it('gets thicker every level', () => {
-    for (let i = 1; i < levels.length; i++) {
+  it('gets thicker every level up to 20 (21 to 23 are split levels)', () => {
+    for (let i = 1; i < 20; i++) {
       expect(fill(levels[i]!.start)).toBeGreaterThan(fill(levels[i - 1]!.start));
     }
   });
@@ -92,9 +92,9 @@ describe('the curve', () => {
     }
   });
 
-  it('is 6 wide by 7 tall for levels 1 to 5, 10 by 12 for 6 to 10, 12 by 15 for 11 to 20', () => {
+  it('is 6 wide by 7 tall for levels 1 to 5, 10 by 12 for 6 to 10, 12 by 15 for 11 to 23', () => {
     expect(levels.map((l) => `${l.start.cols}x${l.start.rows}`)).toEqual([
-      ...Array(5).fill('6x7'), ...Array(5).fill('10x12'), ...Array(10).fill('12x15'),
+      ...Array(5).fill('6x7'), ...Array(5).fill('10x12'), ...Array(13).fill('12x15'),
     ]);
   });
 
@@ -122,7 +122,7 @@ describe.each(levels.slice(5, 10).map((l) => [l.id, l.start] as const))('middle 
   });
 });
 
-describe.each(levels.slice(10, 20).map((l) => [l.id, l.start] as const))('late band: level %s', (_, s) => {
+describe.each(levels.slice(10, 20).map((l) => [l.id, l.start] as const))('late band: level %s', (id, s) => {
   it('sits in the late band', () => inBand(s, BANDS.late));
 
   it('keeps two nests of L\'s and two long bars as landmarks (job 018)', () => {
@@ -138,6 +138,12 @@ describe.each(levels.slice(10, 20).map((l) => [l.id, l.start] as const))('late b
     expect(within(m.singles / m.pieces, BANDS.late.singleShare!), `${m.singles} singles of ${m.pieces}`).toBe(true);
     expect(m.convoluted, 'convoluted').toBeGreaterThanOrEqual(0.2 * m.pieces);
     for (const b of s.blocks) expect(isThick(b.shape), b.id).toBe(false);
+  });
+
+  it('has two split pieces on levels 11 to 15 and three on 16 to 20, each with its order forced (job 021)', () => {
+    const found = splits(s);
+    expect(found).toHaveLength(Number(id) <= 15 ? 2 : 3);
+    for (const x of found) expect(x.forced && !x.locked, x.id).toBe(true);
   });
 
   it('cages a piece inside a U that waits for it (job 019)', () => {
@@ -159,6 +165,26 @@ describe.each(levels.slice(10, 20).map((l) => [l.id, l.start] as const))('late b
       const ids = new Set(g.map((b) => b.id));
       expect(g.some((b) => [...lanes.get(b.id)!].some((x) => ids.has(x))), `${name} pieces depend on each other`).toBe(true);
     }
+  });
+});
+
+// Job 021: split pieces carry the puzzle.
+describe.each(levels.slice(20, 23).map((l) => [l.id, l.start] as const))('split level %s', (_, s) => {
+  it('sits in the late band, with its landmarks', () => {
+    inBand(s, BANDS.late);
+    expect(new Set(s.blocks.filter((b) => b.group).map((b) => b.group)).size).toBe(2);
+  });
+
+  it('has twelve split pieces, each with its order forced and none locked', () => {
+    const found = splits(s);
+    expect(found).toHaveLength(12);
+    for (const x of found) expect(x.forced && !x.locked, x.id).toBe(true);
+  });
+
+  it('mixes colours as levels 6 to 20 do', () => {
+    for (const c of colourSpread(s)) expect(c.ratio, c.colour).toBeGreaterThanOrEqual(0.9);
+    const c = clumping(s);
+    expect(c.share).toBeLessThan(c.random);
   });
 });
 
