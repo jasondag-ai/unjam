@@ -130,16 +130,23 @@ export function settle(state: State): State {
   if (!state.gravity) return state;
   const d = DELTA[DIRECTION_TO[state.gravity]];
   // How far a cell is along the pull: larger is nearer the gravity rail.
-  const depth = (b: Block) => Math.max(...cellsOf(b).map((c) => c.row * d.row + c.col * d.col));
+  const depth = (b: Block) => Math.max(...b.shape.map((c) => (b.anchor.row + c.row) * d.row + (b.anchor.col + c.col) * d.col));
+  const occ = occupancy(state);
   let blocks = [...state.blocks];
   for (let moved = true; moved; ) {
     moved = false;
     const order = blocks.map((_, i) => i).sort((i, j) => depth(blocks[j]!) - depth(blocks[i]!));
     for (const i of order) {
-      const now = { ...state, blocks };
-      if (legalSlides(now, blocks[i]!.id)[DIRECTION_TO[state.gravity]] < 1) continue;
       const b = blocks[i]!;
-      blocks = blocks.map((x, k) => (k === i ? { ...b, anchor: { row: b.anchor.row + d.row, col: b.anchor.col + d.col } } : x));
+      const cells = cellsOf(b);
+      const fits = cells.every((c) => {
+        const next = { row: c.row + d.row, col: c.col + d.col };
+        return inBounds(state, next) && isFreeFor(occ, next, b.id);
+      });
+      if (!fits) continue;
+      for (const c of cells) occ.delete(`${c.row},${c.col}`);
+      for (const c of cells) occ.set(`${c.row + d.row},${c.col + d.col}`, b.id);
+      blocks[i] = { ...b, anchor: { row: b.anchor.row + d.row, col: b.anchor.col + d.col } };
       moved = true;
     }
   }
