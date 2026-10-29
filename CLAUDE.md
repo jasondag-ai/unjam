@@ -40,6 +40,9 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
   by its own rail, the other part solid. A tap sends the first part that can go; the rest stays
   as an ordinary piece. Generated splits are always forced (one part in the other's lane) and
   never locked. Levels 11-15 have 2, 16-20 have 3, 21-23 (late boards) have 12.
+- Gravity (job 022 spike, levels 24-26 only): `State.gravity` pulls toward one rail and the board
+  settles after every exit, so taps alone can strand it. Built in reverse with lifts, each step
+  checked forward (src/search/gravity.ts, `npm run gravity`); the solution is kept on the level.
 - Deadlock: when pieces remain and none can leave, the status says "Stuck: no piece can leave" and
   the footer button offers Restart; taps there cost no strike. Exits alone can never cause it
   (they only empty cells); it guards for drag input.
@@ -89,6 +92,7 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Job 018: press highlight; grid 10x12 / 12x15; levels 16-20; same-colour neighbours below random.
 - Job 019: singles back (rule 2), skinny convoluted strokes, caged pieces; peel colouring.
 - Job 021: split pieces (two colours, two exits); levels 21-23.
+- Job 022 (spike): gravity, levels 24-26; verdict in HANDOFF.
 - The look (M1, final): ground #060B14, faint grid behind the board; blocks are rounded shapes with
   a 1.5px lit border, translucent fill of the same colour and an outer glow; sky blue #40B4FF (`cyan` in code), amber
   #F2A93B, violet #B3A3FF, mint #4ABF6A (job 016: contrast 8.4-9.9 on the ground, apart in lightness); rails are glowing bars; every block carries its colour's
@@ -107,4 +111,5 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - `npx tsx src/engine/demo.ts` (or `npm run demo`) — scripted solve in the terminal.
 - `npm run levels` — regenerate levels 1 to 23 from the curve in `tools/make-levels.ts`, one process per level (about 70 min).
 - `npm run dev` — Vite dev server on the local network, fixed port 5290 (5173-5181 belong to other projects).
+- `npm run gravity` — regenerate gravity levels 24 to 26 (`tools/make-gravity.ts`, about 4 min).
 - `npm run release` — deploy (see Deploy). `npm run check-live` — is it live?

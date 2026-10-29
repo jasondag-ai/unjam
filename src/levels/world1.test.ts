@@ -8,7 +8,8 @@ import { BANDS, COLOUR_SHARE, type Band } from './bands';
 import { lateCandidates } from './candidates';
 import { world1 } from './world1';
 
-const levels = world1.levels;
+// Gravity levels (job 022 spike) have their own tests in gravity.test.ts.
+const levels = world1.levels.filter((l) => !l.start.gravity);
 const filled = (s: State) => s.blocks.reduce((n, b) => n + b.shape.length, 0);
 const fill = (s: State) => filled(s) / (s.rows * s.cols);
 const free = (s: State) => s.blocks.filter((b) => canExit(s, b.id)).length;

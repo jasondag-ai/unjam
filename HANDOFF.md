@@ -431,8 +431,37 @@ pieces making bigger blocks), then "let's try and see how it looks" to the propo
 71. Twelve on 21-23, a quarter of the pieces; a late board has room for 10-20 forced splits.
 72. Job 022 arrived during 021. 021 shipped first; 022's gravity levels follow as 24-26.
 
+## Job 022: gravity spike (2026-10-29, not committed to the game)
+- Engine: `State.gravity` (a side). After every exit the board settles: pieces slide one cell at a
+  time toward that rail, nearest first, until none can move (`settle`, `isSettled`). No gravity,
+  nothing changes. Tests: src/engine/gravity.test.ts (includes a three-piece board stranded by taps).
+- Generator (src/search/gravity.ts): reverse build with one more move. A piece may go in under a
+  stack, lifting it away from the pull. Every step is checked forward: take the new piece out,
+  settle, and the board must be exactly the one before. So the build order reversed always clears
+  (rule 6) with no forward solver, and the falls along the way are part of the solution. Colours
+  are dealt afterwards: settling ignores colour, so each piece's open rails at its turn are fixed,
+  and any choice among them still clears.
+- Levels 24-26 (npm run gravity, about 4 minutes): 10x12, 33/36/39 pieces, 68/72/75 percent,
+  pulling down, left, up. The solution is stored on the level (`Level.solution`); the greedy
+  "any free piece" solver no longer applies.
+- Random play strands them 36, 43 and 38 percent of the time (2,000 plays each). The stuck
+  screen fires, a tap there costs no strike, Restart clears it (checked in the browser).
+- A depth-first forward solver with a memo solves each from the start in under 50 ms, and tells a
+  lost mid-game position from a live one in at most half a second (5,355 nodes, level 26).
+
+## Job 022 decisions and findings
+73. Reverse building holds under gravity; no forward solver is needed to guarantee a level. A
+    hint from any mid-game position needs the forward solver (rule 7); it is cheap at this size.
+74. Colour mix fails: lowest spread 0.54, 0.63, 0.28 (rule 0.9), same-colour neighbours above
+    random. A piece of the pull's colour can only leave from that rail, and the opposite colour
+    only from the top of its stack, so colour follows position. Left as found: it is a spike.
+75. Ranked boards so random play strands 10-90 percent: gravity matters but there is a way through.
+76. Settling pieces slide into place over 180 ms (snap with reduced motion). No sign of the pull
+    direction on screen yet (art and UI out of scope).
+
 ## Needs from Jason
 - Play levels 21-23: tap a split piece, half leaves, the rest needs another wall.
+- Play gravity levels 24-26 and decide: keep gravity (then: show the pull, and fix the colour mix)?
 - Still open: more convoluted pieces than 25-35 percent (decision 66)? Levels 1-5 mixed below random?
 
 ## Next step
