@@ -12,7 +12,7 @@ import type { MotifName } from '../src/search/shapes';
 
 const RAILS = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
 
-type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'threads' | 'threadChannel' | 'closedThreads' | 'dealShares' | 'bars' | 'clumpMargin' | 'blockFirst' | 'cages' | 'peel' | 'sizePull' | 'landing' | 'tries'> & { readonly colourMix?: number; readonly groups?: readonly MotifName[] } & { readonly band: 'early' | 'middle' | 'late' };
+type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'threads' | 'threadChannel' | 'closedThreads' | 'dealShares' | 'bars' | 'clumpMargin' | 'blockFirst' | 'cages' | 'peel' | 'sizePull' | 'landing' | 'splits' | 'tries'> & { readonly colourMix?: number; readonly groups?: readonly MotifName[] } & { readonly band: 'early' | 'middle' | 'late' };
 
 // Rising steadily: 6x7 for levels 1 to 5, 10x12 for 6 to 10, 12x15 for 11 to 20 (job 018).
 // Fill 36% -> 90%. Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give every colour 20 to 30
@@ -37,6 +37,15 @@ const CURVE: readonly Plan[] = [
     band: 'late', pieces: 48, cells, free: [1, 70], ringMax: 99, centrePull: 0.2, colourMix: 0.9, clumpMargin: -0.03,
     threads: 2, threadChannel: 4, closedThreads: 1, cages: 1, dealShares: true, bars: 2, blockFirst: false,
     sizePull: 3, landing: true, peel: true, tries: 2000 + (cells - 153) * 700, groups: ['nest3', 'nest2'],
+    // Job 021: two split pieces on levels 11 to 15, three on 16 to 20, each with its order forced.
+    splits: cells < 158 ? 2 : 3,
+  })),
+  // Job 021: three levels where split pieces carry the puzzle. Late boards, a quarter of the
+  // pieces split, nests and bars kept as landmarks; no threads or cages, so the splits stand out.
+  ...[156, 157, 158].map((cells): Plan => ({
+    band: 'late', pieces: 48, cells, free: [1, 70], ringMax: 99, centrePull: 0.2, colourMix: 0.9, clumpMargin: -0.03,
+    dealShares: true, bars: 2, blockFirst: false, sizePull: 3, landing: true, peel: true, tries: 2000,
+    groups: ['nest3', 'nest2'], splits: 12,
   })),
 ];
 
@@ -78,7 +87,7 @@ function level(i: number, plan: Plan): void {
   const s = result.state;
   const filled = s.blocks.reduce((n, b) => n + b.shape.length, 0);
   console.error(`level ${i + 1}: ${s.blocks.length} pieces, ${filled} cells`);
-  out.push(`  // Level ${i + 1} (${band.name}, ${s.cols}x${s.rows}): ${s.blocks.length} pieces, ${filled} of ${s.cols * s.rows} cells, ${result.pinned} pinned.`);
+  out.push(`  // Level ${i + 1} (${band.name}, ${s.cols}x${s.rows}): ${s.blocks.length} pieces, ${filled} of ${s.cols * s.rows} cells, ${result.pinned} pinned${result.split ? `, ${result.split} split` : ''}.`);
   for (const line of boardToText(s).split('\n')) out.push(`  //   ${line}`);
   out.push(`  {`, `    id: '${i + 1}',`, `    start: {`, `      rows: ${s.rows},`, `      cols: ${s.cols},`);
   out.push(`      rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },`);
@@ -86,7 +95,8 @@ function level(i: number, plan: Plan): void {
   for (const b of s.blocks) {
     const shape = b.shape.map((c) => `{ row: ${c.row}, col: ${c.col} }`).join(', ');
     const group = b.group ? `, group: '${b.group}'` : '';
-    out.push(`        { id: '${b.id}', colour: '${b.colour}'${group}, anchor: { row: ${b.anchor.row}, col: ${b.anchor.col} }, shape: [${shape}] },`);
+    const colours = b.colours ? `, colours: [${b.colours.map((c) => `'${c}'`).join(', ')}]` : '';
+    out.push(`        { id: '${b.id}', colour: '${b.colour}'${group}${colours}, anchor: { row: ${b.anchor.row}, col: ${b.anchor.col} }, shape: [${shape}] },`);
   }
   out.push(`      ],`, `    },`, `  },`);
 }
