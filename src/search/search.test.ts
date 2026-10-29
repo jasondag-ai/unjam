@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { canExit, cellsOf, validateState, type Rails } from '../engine';
-import { colourSpread } from './measures';
-import { colourQuota, makeRandom, searchBoard, tapSolution, type SearchParams } from './search';
+import { colourSpread, splits } from './measures';
+import { colourQuota, makeRandom, searchBoard, splitPieces, tapSolution, type SearchParams } from './search';
 import { familyOf, isThick, KINDS, kindOf, notchOf, shapeClass, SHAPES } from './shapes';
 
 const RAILS: Rails = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' };
@@ -154,5 +154,26 @@ describe('searchBoard', () => {
   it('gives up cleanly when the numbers cannot fit', () => {
     expect(searchBoard({ ...params, pieces: 3, cells: 17 }, RAILS)).toBeNull(); // too few pieces for the cells
     expect(searchBoard({ ...params, pieces: 9, cells: 18 }, RAILS)).toBeNull(); // 9 cannot split 20-30% four ways
+  });
+});
+
+describe('splitPieces (job 021)', () => {
+  const board = searchBoard(params, RAILS)!.state;
+
+  it('splits pieces so one part must go first, and the board still clears by taps', () => {
+    const { state, split } = splitPieces(board, 1, makeRandom(9));
+    expect(split).toBe(1);
+    expect(() => validateState(state)).not.toThrow();
+    expect(splits(state)).toHaveLength(1);
+    expect(splits(state).every((x) => x.forced && !x.locked)).toBe(true);
+    expect(tapSolution(state)).not.toBeNull();
+    // Only colours change: the cells are the board's own.
+    expect(state.blocks.map((b) => [b.id, b.colour, b.anchor, b.shape])).toEqual(board.blocks.map((b) => [b.id, b.colour, b.anchor, b.shape]));
+  });
+
+  it('asked for a split through searchBoard, returns the same board, split', () => {
+    const result = searchBoard({ ...params, splits: 1 }, RAILS)!;
+    expect(result.split).toBe(1);
+    expect(result.state.blocks.map((b) => b.shape)).toEqual(board.blocks.map((b) => b.shape));
   });
 });

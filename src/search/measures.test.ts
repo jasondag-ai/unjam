@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { State } from '../engine';
-import { blockers, cages, clumping, colourSpread, dependency, railDistance, shapeMix, threads } from './measures';
+import { blockers, cages, clumping, colourSpread, dependency, railDistance, shapeMix, splits, threads } from './measures';
 
 const rails = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
 const bar = (id: string, colour: 'amber' | 'cyan' | 'violet' | 'mint', row: number, col: number) => ({
@@ -110,5 +110,22 @@ describe('cages (job 019)', () => {
 
   it('counts singles, convoluted forms and plain pieces', () => {
     expect(shapeMix({ rows: 5, cols: 5, rails, blocks: [u, c, bar('B', 'cyan', 0, 0)] })).toEqual({ pieces: 3, singles: 1, convoluted: 1, plain: 1 });
+  });
+});
+
+describe('splits (job 021)', () => {
+  const piece = (colours: ('amber' | 'cyan' | 'violet' | 'mint')[]) => ({
+    id: 'S', colour: 'amber' as const, colours, anchor: { row: 2, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }],
+  });
+  const at = (b: ReturnType<typeof piece>): State => ({ rows: 5, cols: 5, rails, blocks: [b] });
+
+  it('is forced when one part stands in the other\'s lane and not the other way', () => {
+    // Sky blue over amber: amber (up) waits for sky blue (right).
+    expect(splits(at(piece(['cyan', 'amber'])))).toEqual([{ id: 'S', forced: true, locked: false }]);
+  });
+
+  it('is free when neither part is in the other\'s lane, locked when both are', () => {
+    expect(splits(at(piece(['amber', 'cyan'])))).toEqual([{ id: 'S', forced: false, locked: false }]);
+    expect(splits(at(piece(['violet', 'amber'])))).toEqual([{ id: 'S', forced: false, locked: true }]);
   });
 });

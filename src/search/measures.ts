@@ -1,4 +1,4 @@
-import { cellsOf, type Block, type Cell, type Colour, type Rails, type Side, type State } from '../engine';
+import { cellsOf, partsOf, type Block, type Cell, type Colour, type Rails, type Side, type State } from '../engine';
 import { notchOf, shapeClass } from './shapes';
 
 const STEP: Readonly<Record<Side, Cell>> = {
@@ -221,4 +221,38 @@ export interface ShapeMix {
 export function shapeMix(s: State): ShapeMix {
   const count = (k: string) => s.blocks.filter((b) => shapeClass(b.shape) === k).length;
   return { pieces: s.blocks.length, singles: count('single'), convoluted: count('convoluted'), plain: count('plain') };
+}
+
+export interface Split {
+  readonly id: string;
+  /** One part stands in another's lane, so the parts must leave in order. */
+  readonly forced: boolean;
+  /** Every part stands in another's lane: the piece can never clear. */
+  readonly locked: boolean;
+}
+
+/**
+ * Job 021: split pieces. For each part, does its lane to its own rail run
+ * through another part of the same piece? Other pieces are ignored: this is
+ * the order the piece's own shape forces.
+ */
+export function splits(s: State): Split[] {
+  return s.blocks.filter((b) => b.colours).map((b) => {
+    const parts = partsOf(b);
+    const held = parts.map((p) => heldBySibling(s, b, p));
+    return { id: b.id, forced: held.some((h) => h) && !held.every((h) => h), locked: held.every((h) => h) };
+  });
+}
+
+/** Does this part's lane to its rail pass through another part of its own piece? */
+export function heldBySibling(s: Pick<State, 'rows' | 'cols' | 'rails'>, block: Block, part: Block): boolean {
+  const mine = new Set(cellsOf(part).map((c) => `${c.row},${c.col}`));
+  const others = new Set(cellsOf(block).map((c) => `${c.row},${c.col}`).filter((k) => !mine.has(k)));
+  const d = STEP[sideOf(s.rails, part.colour)];
+  for (const c of cellsOf(part)) {
+    for (let r = c.row + d.row, k = c.col + d.col; r >= 0 && r < s.rows && k >= 0 && k < s.cols; r += d.row, k += d.col) {
+      if (others.has(`${r},${k}`)) return true;
+    }
+  }
+  return false;
 }

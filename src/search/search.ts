@@ -1,5 +1,5 @@
-import { applyExit, canExit, cellsOf, isSolved, type Block, type Cell, type Colour, type Rails, type Side, type State } from '../engine';
-import { cages, railDistance, threads } from './measures';
+import { applyExit, canExit, cellsOf, findBlock, isSolved, type Block, type Cell, type Colour, type Rails, type Side, type State } from '../engine';
+import { cages, heldBySibling, railDistance, threads } from './measures';
 import { MOTIF_CELLS, MOTIF_PIECES, MOTIF_TURNS, notchOf, placementOrder, SHAPES, SIZE, type Kind, type MotifName } from './shapes';
 
 /** Everything that sets how hard a generated board is. */
@@ -92,6 +92,12 @@ export interface SearchParams {
    * line to an edge than there are pieces still to place.
    */
   readonly landing?: boolean;
+  /**
+   * Job 021: split this many pieces of the chosen board, each with its
+   * order forced (see splitPieces). Done once on the winner, with its own
+   * random numbers, so the board itself is the one the search picked.
+   */
+  readonly splits?: number;
   readonly tries: number;
   readonly seed: number;
 }
@@ -100,6 +106,8 @@ export interface SearchResult {
   readonly state: State;
   /** Pieces held by two or more different neighbours on the way to their rail. */
   readonly pinned: number;
+  /** Job 021: pieces split (asked for with `splits`). */
+  readonly split?: number;
 }
 
 const COLOURS: readonly Colour[] = ['amber', 'cyan', 'violet', 'mint'];
@@ -154,6 +162,11 @@ export function searchBoard(params: SearchParams, rails: Rails): SearchResult | 
       best = { state: relabel(state), pinned };
       bestRank = rank;
     }
+  }
+  if (best && params.splits) {
+    const { state, split } = splitPieces(best.state, params.splits, makeRandom(params.seed + 7919));
+    if (split < params.splits) return null;
+    best = { ...best, state, split };
   }
   return best;
 }
@@ -858,4 +871,90 @@ export function tapSolution(state: State): string[] | null {
     s = applyExit(s, free.id)!;
   }
   return taps;
+}
+
+/**
+ * Job 021: turn up to `want` pieces into split pieces whose order is forced.
+ * A piece P of colour c becomes two parts: B keeps c and A takes a colour a.
+ * A stands in B's lane, so A must go first, and A's lane never runs through
+ * B, so the piece can always clear. Replaying a tap solution, A's lane must
+ * be clear of other pieces at the moment P left, so the board still clears
+ * by taps (rule 6): A goes, then B through P's old lane. Shape groups,
+ * threaded pieces and cages are left alone. Returns the board and how many
+ * pieces were split.
+ */
+export function splitPieces(state: State, want: number, rand: () => number): { state: State; split: number } {
+  const keep = new Set<string>();
+  for (const b of state.blocks) if (b.group) keep.add(b.id);
+  for (const t of threads(state)) [t.id, ...t.holds].forEach((id) => keep.add(id));
+  for (const c of cages(state)) [c.id, c.by].forEach((id) => keep.add(id));
+  let s = state;
+  let split = 0;
+  for (; split < want; split++) {
+    const taps = tapSolution(s);
+    if (!taps) throw new Error('splitPieces needs a board that clears');
+    let best: { id: string; colours: Colour[]; score: number } | null = null;
+    let cur = s;
+    for (const id of taps) {
+      const b = findBlock(cur, id)!;
+      if (!findBlock(s, id)!.colours && !keep.has(id) && b.shape.length >= 2) {
+        for (const option of splitsOf(cur, b)) {
+          const score = Math.min(option.a, b.shape.length - option.a) * 2 + b.shape.length * 0.5 + rand() * 2;
+          if (!best || score > best.score) best = { id, colours: option.colours, score };
+        }
+      }
+      cur = applyExit(cur, id)!;
+    }
+    if (!best) break;
+    const { id, colours } = best;
+    s = { ...s, blocks: s.blocks.map((b) => (b.id === id ? { ...b, colours } : b)) };
+  }
+  return { state: s, split };
+}
+
+/** Every forced split of block b, with b about to leave from `now`: A's colour per cell and A's size. */
+function splitsOf(now: State, b: Block): { colours: Colour[]; a: number }[] {
+  const n = b.shape.length;
+  const out: { colours: Colour[]; a: number }[] = [];
+  const others = new Set(now.blocks.filter((o) => o.id !== b.id).flatMap(cellsOf).map((c) => key(c.row, c.col)));
+  for (let mask = 1; mask < (1 << n) - 1; mask++) {
+    const inA = b.shape.map((_, i) => (mask >> i) & 1);
+    if (!connected(b.shape.filter((_, i) => inA[i])) || !connected(b.shape.filter((_, i) => !inA[i]))) continue;
+    for (const a of COLOURS) {
+      if (a === b.colour) continue;
+      const colours = inA.map((x) => (x ? a : b.colour));
+      const whole: Block = { ...b, colours };
+      const partA: Block = { ...b, colour: a, shape: b.shape.filter((_, i) => inA[i]) };
+      const partB: Block = { ...b, shape: b.shape.filter((_, i) => !inA[i]) };
+      if (!heldBySibling(now, whole, partB) || heldBySibling(now, whole, partA)) continue;
+      const side = (Object.keys(now.rails) as Side[]).find((k) => now.rails[k] === a)!;
+      const d = STEP[side];
+      const clear = cellsOf(partA).every((c) => {
+        for (let r = c.row + d.row, k = c.col + d.col; r >= 0 && r < now.rows && k >= 0 && k < now.cols; r += d.row, k += d.col) {
+          if (others.has(key(r, k))) return false;
+        }
+        return true;
+      });
+      if (clear) out.push({ colours, a: partA.shape.length });
+    }
+  }
+  return out;
+}
+
+function connected(cells: readonly Cell[]): boolean {
+  if (cells.length === 0) return false;
+  const all = new Set(cells.map((c) => key(c.row, c.col)));
+  const seen = new Set([key(cells[0]!.row, cells[0]!.col)]);
+  const stack = [cells[0]!];
+  while (stack.length > 0) {
+    const c = stack.pop()!;
+    for (const d of Object.values(STEP)) {
+      const k = key(c.row + d.row, c.col + d.col);
+      if (all.has(k) && !seen.has(k)) {
+        seen.add(k);
+        stack.push({ row: c.row + d.row, col: c.col + d.col });
+      }
+    }
+  }
+  return seen.size === all.size;
 }
