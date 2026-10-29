@@ -79,6 +79,14 @@ export function validateState(state: State): void {
     if (n < MIN_PIECE || n > MAX_PIECE) throw new Error(`Block ${block.id} has ${n} cells, needs ${MIN_PIECE} to ${MAX_PIECE}`);
     if (new Set(block.shape.map(key)).size !== n) throw new Error(`Block ${block.id} repeats a cell`);
     if (!isConnected(block.shape)) throw new Error(`Block ${block.id} is not one connected piece`);
+    if (block.colours) {
+      if (block.colours.length !== n) throw new Error(`Block ${block.id} needs one colour per cell`);
+      const parts = new Set(block.colours);
+      if (parts.size < 2) throw new Error(`Block ${block.id} is split but has one colour`);
+      for (const c of parts) {
+        if (!isConnected(block.shape.filter((_, i) => block.colours![i] === c))) throw new Error(`Block ${block.id}: its ${c} part is not connected`);
+      }
+    }
     for (const cell of cellsOf(block)) {
       if (!inBounds(state, cell)) throw new Error(`Block ${block.id} is off the board at ${key(cell)}`);
       const other = occ.get(key(cell));

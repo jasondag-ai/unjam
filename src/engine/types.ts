@@ -20,6 +20,14 @@ export interface Block {
    */
   readonly group?: string;
   readonly colour: Colour;
+  /**
+   * Job 021: a split piece. One colour per cell, in shape order, two or more
+   * colours. Each colour's cells leave as one part through that colour's
+   * rail, the other parts counting as solid. Left out, every cell is
+   * `colour`. On a split piece `colour` is the main colour, the part the
+   * generator meant to leave last.
+   */
+  readonly colours?: readonly Colour[];
   /** Board cell that offset {row: 0, col: 0} sits on. */
   readonly anchor: Cell;
   /** Cell offsets from the anchor. */

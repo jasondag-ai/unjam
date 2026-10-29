@@ -1,4 +1,4 @@
-import { applyExit, canExit, isStuck } from './moves';
+import { applyExit, exitingPart, isStuck } from './moves';
 import { canUndo, commit, createHistory, current, restart, undo, type History } from './history';
 import { findBlock } from './board';
 import type { Block, Side, State } from './types';
@@ -13,7 +13,7 @@ export interface Attempt {
 }
 
 export type TapResult =
-  /** The piece left by its rail. Free, uncounted. */
+  /** The piece, or on a split piece the part that could go, left by its rail. Free, uncounted. */
   | { readonly kind: 'exit'; readonly attempt: Attempt; readonly block: Block; readonly side: Side }
   /** The lane was not clear: a strike. */
   | { readonly kind: 'strike'; readonly attempt: Attempt }
@@ -33,9 +33,10 @@ export function tap(attempt: Attempt, blockId: string): TapResult {
   const block = findBlock(state, blockId);
   if (!block) return { kind: 'none', attempt };
   if (isStuck(state)) return { kind: 'stuck', attempt };
-  const side = canExit(state, blockId);
-  if (side) {
-    return { kind: 'exit', block, side, attempt: { ...attempt, history: commit(attempt.history, applyExit(state, blockId)) } };
+  const exiting = exitingPart(state, blockId);
+  if (exiting) {
+    const { part, side } = exiting;
+    return { kind: 'exit', block: part, side, attempt: { ...attempt, history: commit(attempt.history, applyExit(state, blockId)) } };
   }
   const strikes = attempt.strikes + 1;
   if (strikes >= MAX_STRIKES) return { kind: 'out', attempt: { history: restart(attempt.history), strikes: 0 } };
