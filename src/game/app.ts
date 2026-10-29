@@ -22,12 +22,16 @@ const EXIT_MS = 220; // rule 11: under 300 ms
 const SHAKE_MS = 200;
 const SHAKE_PX = 4;
 const PULSE_MS = 240;
+/** Job 022: pieces settling after an exit slide there over this long. */
+const FALL_MS = 180;
 /** How long "3 strikes" stays up after the level restarts. */
 const OUT_NOTE_MS = 1600;
 
 type Anim =
   | { kind: 'exit'; block: Block; side: Side; start: number }
-  | { kind: 'shake'; id: string; start: number };
+  | { kind: 'shake'; id: string; start: number }
+  /** Job 022: a piece that settled, drawn sliding from where it was (dx, dy away) to where it is. */
+  | { kind: 'fall'; id: string; dx: number; dy: number; start: number };
 
 export interface Hud {
   readonly canvas: HTMLCanvasElement;
@@ -106,12 +110,24 @@ export function startGame(hud: Hud, world: World): void {
   // Rule 5: a tap on a piece whose lane is not clear is a strike; the third
   // restarts the level.
   function tap(id: string, now: number): void {
+    const before = current(attempt.history);
     const result = tapPiece(attempt, id);
     if (result.kind === 'none') return;
     attempt = result.attempt;
     anims = anims.filter((a) => !(a.kind === 'shake' && a.id === id));
     if (result.kind === 'exit') {
       anims.push({ kind: 'exit', block: result.block, side: result.side, start: now });
+      // Job 022: on a gravity level the rest may settle. Each moved piece slides from where it
+      // was drawn (including any fall still under way) to its new place.
+      for (const b of current(attempt.history).blocks) {
+        const was = before.blocks.find((x) => x.id === b.id);
+        if (!was || (was.anchor.row === b.anchor.row && was.anchor.col === b.anchor.col)) continue;
+        const still = fallOffset(b.id, now);
+        anims = anims.filter((a) => !(a.kind === 'fall' && a.id === b.id));
+        const dx = (was.anchor.col - b.anchor.col) * layout.cell + still.dx;
+        const dy = (was.anchor.row - b.anchor.row) * layout.cell + still.dy;
+        if (!motion.matches) anims.push({ kind: 'fall', id: b.id, dx, dy, start: now });
+      }
     } else {
       if (result.kind === 'out') {
         anims = [];
@@ -140,18 +156,29 @@ export function startGame(hud: Hud, world: World): void {
   function drawFrame(now: number): void {
     frameRequested = false;
     const reduced = motion.matches;
-    anims = anims.filter((a) => now - a.start < (a.kind === 'exit' ? EXIT_MS : reduced ? PULSE_MS : SHAKE_MS));
+    anims = anims.filter((a) => now - a.start < (a.kind === 'exit' ? EXIT_MS : a.kind === 'fall' ? FALL_MS : reduced ? PULSE_MS : SHAKE_MS));
     const draws: Draw[] = [];
     for (const block of current(attempt.history).blocks) {
       const shake = anims.find((a) => a.kind === 'shake' && a.id === block.id);
       const pressed = [...presses.values()].some((p) => p.over === block.id);
-      draws.push(shake ? { ...shakeDraw(block, now - shake.start, reduced), pressed } : { block, dx: 0, dy: 0, alpha: 1, clip: false, pressed });
+      const fall = fallOffset(block.id, now);
+      const draw = shake ? shakeDraw(block, now - shake.start, reduced) : { block, dx: 0, dy: 0, alpha: 1, clip: false };
+      draws.push({ ...draw, dx: draw.dx + fall.dx, dy: draw.dy + fall.dy, pressed });
     }
     for (const a of anims) {
       if (a.kind === 'exit') draws.push(exitDraw(a.block, a.side, now - a.start, reduced));
     }
     renderer.frame(draws);
     if (anims.length > 0) requestFrame();
+  }
+
+  /** How far a settling piece still is from its place: eased in, so it drops and lands. */
+  function fallOffset(id: string, now: number): { dx: number; dy: number } {
+    const a = anims.find((x) => x.kind === 'fall' && x.id === id);
+    if (!a || a.kind !== 'fall') return { dx: 0, dy: 0 };
+    const t = Math.min((now - a.start) / FALL_MS, 1);
+    const left = 1 - t * t;
+    return { dx: a.dx * left, dy: a.dy * left };
   }
 
   function exitDraw(block: Block, side: Side, elapsed: number, reduced: boolean): Draw {
