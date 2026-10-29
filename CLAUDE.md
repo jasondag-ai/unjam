@@ -39,10 +39,12 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Split pieces (job 021): a block's `colours` gives each cell a colour; each colour's part leaves
   by its own rail, the other part solid. A tap sends the first part that can go; the rest stays
   as an ordinary piece. Generated splits are always forced (one part in the other's lane) and
-  never locked. Levels 11-15 have 2, 16-20 have 3, 21-23 (late boards) have 12.
+  never locked. Levels 11-15 have 2, 16-20 have 3, 21-23 (late boards) have 12. Drawn as one
+  outline whose colour fades across the join (job 023), never with a seam line.
 - Gravity (job 022 spike, levels 24-26 only): `State.gravity` pulls toward one rail and the board
   settles after every exit, so taps alone can strand it. Built in reverse with lifts, each step
   checked forward (src/search/gravity.ts, `npm run gravity`); the solution is kept on the level.
+  Empty cells show a faint chevron pointing the pull (job 023).
 - Deadlock: when pieces remain and none can leave, the status says "Stuck: no piece can leave" and
   the footer button offers Restart; taps there cost no strike. Exits alone can never cause it
   (they only empty cells); it guards for drag input.

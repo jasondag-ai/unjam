@@ -26,13 +26,16 @@ export class Renderer {
   private layout: Layout | null = null;
   private background: HTMLCanvasElement | null = null;
   private sprites = new Map<string, HTMLCanvasElement>();
+  /** Job 023: on a gravity level, a chevron pointing the way pieces fall, drawn on every empty cell. */
+  private chevron: HTMLCanvasElement | null = null;
 
   constructor(private readonly ctx: CanvasRenderingContext2D, private readonly world: World) {}
 
-  resize(layout: Layout, rails: Rails): void {
+  resize(layout: Layout, rails: Rails, gravity?: Side): void {
     this.layout = layout;
     this.sprites.clear();
     this.background = this.paintBackground(layout, rails);
+    this.chevron = gravity ? this.paintChevron(layout, gravity) : null;
   }
 
   frame(draws: readonly Draw[]): void {
@@ -43,6 +46,18 @@ export class Renderer {
     ctx.drawImage(background, 0, 0);
     ctx.setTransform(layout.dpr, 0, 0, layout.dpr, 0, 0);
     const { board } = layout;
+    if (this.chevron) {
+      // Only on open ground: under a translucent piece it would read as part of the piece.
+      const taken = new Set(draws.flatMap((d) => cellsOf(d.block).map((c) => `${c.row},${c.col}`)));
+      const { cell } = layout;
+      const rows = Math.round(board.h / cell);
+      const cols = Math.round(board.w / cell);
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          if (!taken.has(`${row},${col}`)) ctx.drawImage(this.chevron, board.x + col * cell, board.y + row * cell, cell, cell);
+        }
+      }
+    }
     for (const d of draws) {
       const r = blockRect(layout, d.block);
       const sprite = this.sprite(d.block, r, d.pressed ?? false);
@@ -80,24 +95,26 @@ export class Renderer {
     if (parts.length === 1) {
       this.paintPiece(g, block, outline, block.colour, pressed);
     } else {
-      // Job 021: a split piece. Each part paints the whole piece in its own colour, clipped to
-      // its own cells (and the glow beyond their outer sides), so the outline runs around the
-      // whole shape and changes colour where the parts meet. A dimmer seam marks the join.
+      // Job 021: a split piece. Each part paints the whole outline in its own colour on a layer
+      // of its own, kept only over its own cells (and the glow beyond their outer sides). Where
+      // the parts meet, the layers fade into each other (job 023), so the border runs on as one
+      // lit tube that changes colour: touching pieces always show a gap, a split never does.
       for (const part of parts) {
+        const layer = document.createElement('canvas');
+        layer.width = canvas.width;
+        layer.height = canvas.height;
+        const l = layer.getContext('2d')!;
+        l.scale(dpr, dpr);
+        l.translate(pad - r.x, pad - r.y);
+        this.paintPiece(l, part, outline, part.colour, pressed);
+        l.setTransform(1, 0, 0, 1, 0, 0);
+        l.shadowBlur = 0; // paintPiece leaves a glow set; it would darken the mask's ramp
+        l.globalCompositeOperation = 'destination-in';
+        l.drawImage(blendMask(layout, block, part, pad, canvas, dpr, pad - r.x, pad - r.y), 0, 0);
         g.save();
-        territory(g, layout, block, part, pad);
-        g.clip();
-        this.paintPiece(g, part, outline, part.colour, pressed);
-        g.save();
-        roundPolygon(g, outline, (layout.cell - 2 * layout.inset) * 0.18);
-        g.clip();
-        g.globalAlpha = 0.5;
-        g.shadowBlur = 0;
-        g.strokeStyle = this.world.palette.blocks[part.colour];
-        g.lineWidth = 2;
-        seams(g, layout, block);
-        g.stroke();
-        g.restore();
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.globalCompositeOperation = 'lighter';
+        g.drawImage(layer, 0, 0);
         g.restore();
       }
     }
@@ -133,6 +150,28 @@ export class Renderer {
     g.shadowBlur = 4;
     const at = blockMark(layout, mark);
     drawGlyph(g, this.world.glyphs[colourName], at.x, at.y, (layout.cell - 2 * layout.inset) * 0.36, colour, 2);
+  }
+
+  private paintChevron(layout: Layout, gravity: Side): HTMLCanvasElement {
+    const { cell, dpr } = layout;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(cell * dpr);
+    canvas.height = Math.ceil(cell * dpr);
+    const g = canvas.getContext('2d')!;
+    g.scale(dpr, dpr);
+    g.translate(cell / 2, cell / 2);
+    g.rotate({ bottom: 0, left: Math.PI / 2, top: Math.PI, right: -Math.PI / 2 }[gravity]);
+    const s = cell * 0.16;
+    g.strokeStyle = this.world.palette.frame;
+    g.lineWidth = 1.5;
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    g.beginPath();
+    g.moveTo(-s, -s / 2);
+    g.lineTo(0, s / 2);
+    g.lineTo(s, -s / 2);
+    g.stroke();
+    return canvas;
   }
 
   private paintBackground(layout: Layout, rails: Rails): HTMLCanvasElement {
@@ -218,27 +257,56 @@ function territory(g: CanvasRenderingContext2D, layout: Layout, block: Block, pa
   }
 }
 
-/** Path along every cell edge where two parts of a split piece meet. */
-function seams(g: CanvasRenderingContext2D, layout: Layout, block: Block): void {
+/**
+ * How much of `part` shows at each point of a split piece: 1 over its own ground (see territory),
+ * 0 over the other parts', ramping across each seam so the colours fade into each other.
+ */
+function blendMask(layout: Layout, block: Block, part: Block, pad: number, size: HTMLCanvasElement, dpr: number, ox: number, oy: number): HTMLCanvasElement {
+  const mask = document.createElement('canvas');
+  mask.width = size.width;
+  mask.height = size.height;
+  const g = mask.getContext('2d')!;
+  g.scale(dpr, dpr);
+  g.translate(ox, oy);
+  g.fillStyle = '#fff';
+  territory(g, layout, block, part, pad);
+  g.fill();
   const colourAt = new Map<string, string>();
   cellsOf(block).forEach((c, i) => colourAt.set(`${c.row},${c.col}`, block.colours![i]!));
+  const has = (row: number, col: number) => colourAt.has(`${row},${col}`);
   const { board, cell } = layout;
-  g.beginPath();
+  const half = cell * 0.4;
   for (const [k, colour] of colourAt) {
     const [row, col] = k.split(',').map(Number) as [number, number];
     const right = colourAt.get(`${row},${col + 1}`);
     const below = colourAt.get(`${row + 1},${col}`);
     const x = board.x + (col + 1) * cell;
     const y = board.y + (row + 1) * cell;
-    if (right && right !== colour) {
-      g.moveTo(x, y - cell);
-      g.lineTo(x, y);
+    if (right && right !== colour && (colour === part.colour || right === part.colour)) {
+      // A vertical seam; it runs on into the glow at an end the piece does not continue past.
+      const top = !has(row - 1, col) && !has(row - 1, col + 1) ? pad : 0;
+      const bottom = !has(row + 1, col) && !has(row + 1, col + 1) ? pad : 0;
+      const ramp = g.createLinearGradient(x - half, 0, x + half, 0);
+      const mine = right === part.colour;
+      ramp.addColorStop(0, mine ? 'rgba(255,255,255,0)' : '#fff');
+      ramp.addColorStop(1, mine ? '#fff' : 'rgba(255,255,255,0)');
+      g.clearRect(x - half, y - cell - top, 2 * half, cell + top + bottom);
+      g.fillStyle = ramp;
+      g.fillRect(x - half, y - cell - top, 2 * half, cell + top + bottom);
     }
-    if (below && below !== colour) {
-      g.moveTo(x - cell, y);
-      g.lineTo(x, y);
+    if (below && below !== colour && (colour === part.colour || below === part.colour)) {
+      const left = !has(row, col - 1) && !has(row + 1, col - 1) ? pad : 0;
+      const right2 = !has(row, col + 1) && !has(row + 1, col + 1) ? pad : 0;
+      const ramp = g.createLinearGradient(0, y - half, 0, y + half);
+      const mine = below === part.colour;
+      ramp.addColorStop(0, mine ? 'rgba(255,255,255,0)' : '#fff');
+      ramp.addColorStop(1, mine ? '#fff' : 'rgba(255,255,255,0)');
+      g.clearRect(x - cell - left, y - half, cell + left + right2, 2 * half);
+      g.fillStyle = ramp;
+      g.fillRect(x - cell - left, y - half, cell + left + right2, 2 * half);
     }
   }
+  return mask;
 }
 
 /** Shrink a clockwise right-angled polygon by `by` (same rule as blockOutline). */

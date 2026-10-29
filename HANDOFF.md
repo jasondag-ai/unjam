@@ -459,9 +459,23 @@ pieces making bigger blocks), then "let's try and see how it looks" to the propo
 76. Settling pieces slide into place over 180 ms (snap with reduced motion). No sign of the pull
     direction on screen yet (art and UI out of scope).
 
+## Job 023: legible splits, gravity sign (2026-10-29)
+Jason: "Add the gravity" and "I didn't see the split pieces".
+- Split pieces read as two pieces pressed together: a hard colour change and a seam line look just
+  like two touching pieces. Now each part's layer fades into the other's across the join, so the
+  lit border runs on as one tube that changes colour. Touching pieces always show a gap; a split
+  never does. (A glow left set by paintPiece darkened the mask's ramp; cleared before masking.)
+- Gravity levels show a faint chevron, in the frame colour, on every empty cell pointing the way
+  pieces fall. Drawn per frame on open ground only: under a translucent piece it read as part of it.
+
+## Job 023 decisions
+77. Read "Add the gravity" as keep gravity and add the sign for the pull (my ask 2). Levels 24-26
+    stay as they are; gravity on more levels and the colour-mix trade are still Jason's call.
+78. The split look is a blend, not a stronger seam: a seam of any kind reads as an edge.
+
 ## Needs from Jason
-- Play levels 21-23: tap a split piece, half leaves, the rest needs another wall.
-- Play gravity levels 24-26 and decide: keep gravity (then: show the pull, and fix the colour mix)?
+- Play levels 21-23 again: does a split now read as one piece?
+- Gravity beyond 24-26? It means a looser colour mix on gravity levels (decision 74).
 - Still open: more convoluted pieces than 25-35 percent (decision 66)? Levels 1-5 mixed below random?
 
 ## Next step
