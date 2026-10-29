@@ -93,9 +93,10 @@ export interface SearchParams {
    */
   readonly landing?: boolean;
   /**
-   * Job 021: split this many pieces of the chosen board, each with its
-   * order forced (see splitPieces). Done once on the winner, with its own
-   * random numbers, so the board itself is the one the search picked.
+   * Job 021: split this many pieces, each with its order forced (see
+   * splitPieces). Boards are ranked unsplit and split with their own random
+   * numbers, so asking for splits never changes which board wins, unless the
+   * winner cannot take them all.
    */
   readonly splits?: number;
   readonly tries: number;
@@ -159,14 +160,17 @@ export function searchBoard(params: SearchParams, rails: Rails): SearchResult | 
     const pinned = state.blocks.filter((b) => blockerCount(state, b) >= 2).length;
     const rank = [largestGap(state), freeCount(state), -pinned];
     if (!best || compare(rank, bestRank) < 0) {
-      best = { state: relabel(state), pinned };
+      const board = relabel(state);
+      if (params.splits) {
+        // A board that cannot take every split is passed over.
+        const { state: split, split: n } = splitPieces(board, params.splits, makeRandom(params.seed + 7919));
+        if (n < params.splits) continue;
+        best = { state: split, pinned, split: n };
+      } else {
+        best = { state: board, pinned };
+      }
       bestRank = rank;
     }
-  }
-  if (best && params.splits) {
-    const { state, split } = splitPieces(best.state, params.splits, makeRandom(params.seed + 7919));
-    if (split < params.splits) return null;
-    best = { ...best, state, split };
   }
   return best;
 }

@@ -36,6 +36,10 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
   least 0.9), same-colour neighbours (below a random deal, job 018), and dependency depth
   (pieces before the most-buried can go; at least 3 on late boards). Never loosen the mix to reach
   density.
+- Split pieces (job 021): a block's `colours` gives each cell a colour; each colour's part leaves
+  by its own rail, the other part solid. A tap sends the first part that can go; the rest stays
+  as an ordinary piece. Generated splits are always forced (one part in the other's lane) and
+  never locked. Levels 11-15 have 2, 16-20 have 3, 21-23 (late boards) have 12.
 - Deadlock: when pieces remain and none can leave, the status says "Stuck: no piece can leave" and
   the footer button offers Restart; taps there cost no strike. Exits alone can never cause it
   (they only empty cells); it guards for drag input.
@@ -84,6 +88,7 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Job 016: real channels (4+ cells, one hidden from the edge), sky blue back.
 - Job 018: press highlight; grid 10x12 / 12x15; levels 16-20; same-colour neighbours below random.
 - Job 019: singles back (rule 2), skinny convoluted strokes, caged pieces; peel colouring.
+- Job 021: split pieces (two colours, two exits); levels 21-23.
 - The look (M1, final): ground #060B14, faint grid behind the board; blocks are rounded shapes with
   a 1.5px lit border, translucent fill of the same colour and an outer glow; sky blue #40B4FF (`cyan` in code), amber
   #F2A93B, violet #B3A3FF, mint #4ABF6A (job 016: contrast 8.4-9.9 on the ground, apart in lightness); rails are glowing bars; every block carries its colour's
@@ -100,6 +105,6 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 ## Commands
 - `npm test` — engine typecheck guard, full typecheck, Vitest.
 - `npx tsx src/engine/demo.ts` (or `npm run demo`) — scripted solve in the terminal.
-- `npm run levels` — regenerate levels 1 to 20 from the curve in `tools/make-levels.ts`, one process per level (about 70 min).
+- `npm run levels` — regenerate levels 1 to 23 from the curve in `tools/make-levels.ts`, one process per level (about 70 min).
 - `npm run dev` — Vite dev server on the local network, fixed port 5290 (5173-5181 belong to other projects).
 - `npm run release` — deploy (see Deploy). `npm run check-live` — is it live?

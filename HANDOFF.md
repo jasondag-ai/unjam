@@ -409,10 +409,31 @@ pieces making bigger blocks), then "let's try and see how it looks" to the propo
 66. Convoluted share 25-35 percent: higher weights failed the colour mix more often.
 67. The cage pair shares a colour (the caged piece can only leave out of the opening).
 
+## Job 021: split pieces (2026-10-29)
+- Engine: a block may carry `colours`, one per cell. Each colour's cells are a part that leaves
+  through that colour's rail, the other parts counting as solid (`partsOf`, `exitingPart`). A tap
+  tries the parts in order and takes the first that can go; none can, a strike. What stays is an
+  ordinary piece of the remaining colour, same id, same place. Tests: src/engine/split.test.ts.
+- Measure `splits()`: forced (one part stands in another's lane, not both ways) and locked.
+- Generator `splitPieces`: a piece P (colour c) becomes A (colour a) and B (keeps c), where A stands
+  in B's lane and A's lane misses B; replaying a tap solution, A's lane must be clear of other
+  pieces when P left, so the board still clears by taps. Nests, threads and cages untouched.
+- Levels 11-15 have 2 split pieces, 16-20 have 3; the boards are otherwise the same as job 019.
+  Levels 21-23 are new late boards with 12 split pieces each, nests and bars, no threads or cages.
+- Render: each part in its colour, one outline round the whole shape, a dimmer seam, a glyph per part.
+
+## Job 021 decisions
+68. `colour` on a split piece is its main colour (the part that leaves last). Measures that read a
+    lane by colour see the original piece, so spread, clumping and depth are as before.
+69. Splitting is a pass after the search, ranked on the unsplit board with its own random numbers,
+    so asking for splits never changes which board wins (unless the winner cannot take them all).
+70. Two splits on 11-15, three on 16-20 (the job asked two or three): rising with the band.
+71. Twelve on 21-23, a quarter of the pieces; a late board has room for 10-20 forced splits.
+72. Job 022 arrived during 021. 021 shipped first; 022's gravity levels follow as 24-26.
+
 ## Needs from Jason
-- Play level 20: new shapes, singles you can hit, the U cages.
-- Want more convoluted pieces than 25-35 percent? It costs search time (see decision 66).
-- Still open from job 018: should levels 1-5 also get same-colour neighbours below random?
+- Play levels 21-23: tap a split piece, half leaves, the rest needs another wall.
+- Still open: more convoluted pieces than 25-35 percent (decision 66)? Levels 1-5 mixed below random?
 
 ## Next step
 - On Jason's word: next job.
