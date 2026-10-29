@@ -1,5 +1,6 @@
 import type { Rails } from '../engine';
 import type { World } from './types';
+import { gravityLevels } from './gravity.generated';
 import { generatedLevels } from './world1.generated';
 
 const rails: Rails = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' };
@@ -18,5 +19,6 @@ export const world1: World = {
   glyphs: { cyan: 'square', amber: 'triangle', violet: 'circle', mint: 'diamond' },
   rails,
   // Levels 1 to 10 come from the board search (tools/make-levels.ts).
-  levels: generatedLevels,
+  // Job 022 (spike): three gravity levels at the end, so nothing before them changes.
+  levels: [...generatedLevels, ...gravityLevels],
 };
