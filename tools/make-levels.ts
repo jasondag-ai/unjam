@@ -12,41 +12,32 @@ import type { MotifName } from '../src/search/shapes';
 
 const RAILS = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
 
-type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'threads' | 'threadChannel' | 'closedThreads' | 'dealShares' | 'bars' | 'clumpMargin' | 'blockFirst' | 'cages' | 'peel' | 'sizePull' | 'landing' | 'splits' | 'tries'> & { readonly colourMix?: number; readonly groups?: readonly MotifName[] } & { readonly band: 'early' | 'middle' | 'late' };
+type Plan = Pick<SearchParams, 'pieces' | 'cells' | 'free' | 'ringMax' | 'centrePull' | 'threads' | 'threadChannel' | 'closedThreads' | 'dealShares' | 'bars' | 'clumpMargin' | 'blockFirst' | 'cages' | 'peel' | 'sizePull' | 'landing' | 'splits' | 'tries' | 'seed'> & { readonly colourMix?: number; readonly groups?: readonly MotifName[] } & { readonly band: 'early' | 'middle' | 'late' };
 
-// Rising steadily: 6x7 for levels 1 to 5, 10x12 for 6 to 10, 12x15 for 11 to 20 (job 018).
-// Fill 36% -> 90%. Early levels use 8 or 10 pieces: 6, 7 and 9 cannot give every colour 20 to 30
-// percent. Levels 6 to 20 mix colours, with same-colour neighbours below a random deal (job 018).
+// Job 024: three acts of five, then five gravity levels (tools/make-gravity.ts). Each plan keeps
+// the seed it was built with, so a board carried over from the old 23-level list comes out the same.
+/** Late boards (job 019): nests of L's and two long bars as landmarks, mixed colours. */
+const late = (cells: number, seed: number, extra: Partial<Plan> = {}): Plan => ({
+  band: 'late', pieces: 48, cells, free: [1, 70], ringMax: 99, centrePull: 0.2, colourMix: 0.9, clumpMargin: -0.03,
+  dealShares: true, bars: 2, blockFirst: false, sizePull: 3, landing: true, peel: true, groups: ['nest3', 'nest2'],
+  tries: 2000 + Math.max(0, cells - 153) * 700, seed, ...extra,
+});
+/** The full late-band treatment: two threads with 4-cell channels (one closed) and a caged piece. */
+const tangled = { threads: 2, threadChannel: 4, closedThreads: 1, cages: 1 } as const;
+
 const CURVE: readonly Plan[] = [
-  { band: 'early', pieces: 8, cells: 15, free: [3, 3], ringMax: 0, centrePull: 1, tries: 600 },
-  { band: 'early', pieces: 8, cells: 17, free: [3, 3], ringMax: 2, centrePull: 1, tries: 600 },
-  { band: 'early', pieces: 8, cells: 18, free: [2, 3], ringMax: 3, centrePull: 1, tries: 600 },
-  { band: 'early', pieces: 10, cells: 19, free: [2, 2], ringMax: 4, centrePull: 1, tries: 600 },
-  { band: 'early', pieces: 10, cells: 21, free: [2, 2], ringMax: 5, centrePull: 1, tries: 600 },
-  // Middle, 10x12: 65 to 78 percent, average piece 2.6 falling to 2.2.
-  ...([[30, 78], [33, 82], [36, 86], [39, 90], [43, 94]] as const).map(([pieces, cells]): Plan => ({
-    band: 'middle', pieces, cells, free: [1, 60], ringMax: 99, centrePull: 0.2, colourMix: 0.9, clumpMargin: -0.03, tries: 300,
-  })),
-  // Late, 12x15 (job 019): 25 px cells on a 375 px phone. Convoluted strokes, singles, dominoes
-  // and threes, two nests of L's and two long bars as landmarks, two threaded pieces with 4-cell
-  // channels (one closed) and a piece caged in a U. Fill 85 -> 90 percent. Big strokes go down
-  // first, an edge stays in reach for every piece still to place, and colours are dealt by
-  // peeling; even so, about one try in 500 (87 percent) to 2,000 (90 percent) passes the colour
-  // mix, so the fuller the board, the more tries.
-  ...[153, 154, 155, 156, 157, 158, 159, 160, 161, 162].map((cells): Plan => ({
-    band: 'late', pieces: 48, cells, free: [1, 70], ringMax: 99, centrePull: 0.2, colourMix: 0.9, clumpMargin: -0.03,
-    threads: 2, threadChannel: 4, closedThreads: 1, cages: 1, dealShares: true, bars: 2, blockFirst: false,
-    sizePull: 3, landing: true, peel: true, tries: 2000 + (cells - 153) * 700, groups: ['nest3', 'nest2'],
-    // Job 021: two split pieces on levels 11 to 15, three on 16 to 20, each with its order forced.
-    splits: cells < 158 ? 2 : 3,
-  })),
-  // Job 021: three levels where split pieces carry the puzzle. Late boards, a quarter of the
-  // pieces split, nests and bars kept as landmarks; no threads or cages, so the splits stand out.
-  ...[156, 157, 158].map((cells): Plan => ({
-    band: 'late', pieces: 48, cells, free: [1, 70], ringMax: 99, centrePull: 0.2, colourMix: 0.9, clumpMargin: -0.03,
-    dealShares: true, bars: 2, blockFirst: false, sizePull: 3, landing: true, peel: true, tries: 2000,
-    groups: ['nest3', 'nest2'], splits: 12,
-  })),
+  // Act 1, dense tap. Level 1 teaches (old level 5), level 2 is the old level 7, 3 to 5 ramp the
+  // late band in, 6 to 10 are the old 16 to 20 without their split pieces: splits open act 2.
+  { band: 'early', pieces: 10, cells: 21, free: [2, 2], ringMax: 5, centrePull: 1, tries: 600, seed: 1004 },
+  { band: 'middle', pieces: 33, cells: 82, free: [1, 60], ringMax: 99, centrePull: 0.2, colourMix: 0.9, clumpMargin: -0.03, tries: 300, seed: 1006 },
+  late(144, 3000, tangled),
+  late(153, 3001, tangled),
+  late(157, 3002, tangled),
+  ...[158, 159, 160, 161, 162].map((cells, i) => late(cells, 1015 + i, tangled)),
+  // Act 2, split pieces: 8 to 12 a board, every one forced. 13 to 15 are the old 21 to 23.
+  late(153, 3010, { splits: 8 }),
+  late(155, 3011, { splits: 10 }),
+  ...[156, 157, 158].map((cells, i) => late(cells, 1020 + i, { splits: 12, tries: 2000 })),
 ];
 
 // No Node types in this project (no new dependency), so read the arguments through globalThis.
@@ -80,7 +71,6 @@ function level(i: number, plan: Plan): void {
     ...(band.singleShare ? { singleShare: band.singleShare } : {}),
     smallShare: band.smallShare,
     colourShare: COLOUR_SHARE,
-    seed: 1000 + i,
   };
   const result = searchBoard(params, RAILS);
   if (!result) throw new Error(`No board for level ${i + 1}`);

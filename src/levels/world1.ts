@@ -18,7 +18,7 @@ export const world1: World = {
   },
   glyphs: { cyan: 'square', amber: 'triangle', violet: 'circle', mint: 'diamond' },
   rails,
-  // Levels 1 to 10 come from the board search (tools/make-levels.ts).
-  // Job 022 (spike): three gravity levels at the end, so nothing before them changes.
+  // Job 024: three acts of five from the board search (tools/make-levels.ts), dense tap then
+  // split pieces, then five gravity levels (tools/make-gravity.ts).
   levels: [...generatedLevels, ...gravityLevels],
 };

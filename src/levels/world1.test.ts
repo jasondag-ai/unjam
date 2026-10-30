@@ -8,8 +8,11 @@ import { BANDS, COLOUR_SHARE, type Band } from './bands';
 import { lateCandidates } from './candidates';
 import { world1 } from './world1';
 
-// Gravity levels (job 022 spike) have their own tests in gravity.test.ts.
+// Job 024: three acts of five (dense tap, then split pieces), then five gravity levels, which
+// have their own tests in gravity.test.ts.
 const levels = world1.levels.filter((l) => !l.start.gravity);
+const act1 = levels.slice(0, 10);
+const splitAct = levels.slice(10, 15);
 const filled = (s: State) => s.blocks.reduce((n, b) => n + b.shape.length, 0);
 const fill = (s: State) => filled(s) / (s.rows * s.cols);
 const free = (s: State) => s.blocks.filter((b) => canExit(s, b.id)).length;
@@ -28,8 +31,10 @@ function inBand(s: State, band: Band): void {
 }
 
 describe('world1', () => {
-  it('has 23 levels, numbered 1 to 23', () => {
-    expect(levels.map((l) => l.id)).toEqual(Array.from({ length: 23 }, (_, i) => String(i + 1)));
+  it('has 20 levels, numbered 1 to 20: 15 tap levels, then 5 gravity levels', () => {
+    expect(world1.levels.map((l) => l.id)).toEqual(Array.from({ length: 20 }, (_, i) => String(i + 1)));
+    expect(levels).toHaveLength(15);
+    expect(world1.levels.slice(15).every((l) => l.start.gravity)).toBe(true);
   });
 
   it('every colour has a distinct glyph', () => {
@@ -74,40 +79,30 @@ describe('world1', () => {
 });
 
 describe('the curve', () => {
-  it('gets thicker every level up to 20 (21 to 23 are split levels)', () => {
-    for (let i = 1; i < 20; i++) {
-      expect(fill(levels[i]!.start)).toBeGreaterThan(fill(levels[i - 1]!.start));
-    }
+  it('fills 50, 68, 80, 85 and 87 percent on levels 1 to 5, then 88 to 90 on 6 to 10', () => {
+    const percent = act1.map((l) => Math.round(100 * fill(l.start)));
+    expect(percent.slice(0, 5)).toEqual([50, 68, 80, 85, 87]);
+    for (const p of percent.slice(5)) expect(within(p, [88, 90]), `${p}%`).toBe(true);
   });
 
-  it('never drops a piece from one level to the next up to the late band (late counts are what fits)', () => {
-    for (let i = 1; i <= 10; i++) {
-      expect(levels[i]!.start.blocks.length).toBeGreaterThanOrEqual(levels[i - 1]!.start.blocks.length);
-    }
+  it('gets thicker every level through act 1', () => {
+    for (let i = 1; i < 10; i++) expect(fill(act1[i]!.start)).toBeGreaterThan(fill(act1[i - 1]!.start));
   });
 
-  it('shrinks the average piece through the middle band as the board fills (job 015)', () => {
-    const average = (s: State) => filled(s) / s.blocks.length;
-    for (let i = 6; i < 10; i++) {
-      expect(average(levels[i]!.start), `level ${i + 1}`).toBeLessThan(average(levels[i - 1]!.start));
-    }
+  it('is 6 by 7 for level 1, 10 by 12 for level 2, 12 by 15 from level 3 on', () => {
+    expect(levels.map((l) => `${l.start.cols}x${l.start.rows}`)).toEqual(['6x7', '10x12', ...Array(13).fill('12x15')]);
   });
 
-  it('is 6 wide by 7 tall for levels 1 to 5, 10 by 12 for 6 to 10, 12 by 15 for 11 to 23', () => {
-    expect(levels.map((l) => `${l.start.cols}x${l.start.rows}`)).toEqual([
-      ...Array(5).fill('6x7'), ...Array(5).fill('10x12'), ...Array(13).fill('12x15'),
-    ]);
+  it('teaches on level 1: ten pieces, clustered, a minute at most', () => {
+    expect(act1[0]!.start.blocks).toHaveLength(10);
   });
 
-  it('starts at the easy end and ends at the top of the middle band', () => {
-    expect(fill(levels[0]!.start)).toBeLessThan(0.37);
-    expect(ringCells(levels[0]!.start)).toBe(0);
-    expect(levels[9]!.start.blocks).toHaveLength(BANDS.middle.pieces[1]);
-    expect(fill(levels[9]!.start)).toBeGreaterThanOrEqual(0.78);
+  it('keeps act 2 at 85 to 88 percent', () => {
+    for (const l of splitAct) expect(within(Math.round(100 * fill(l.start)), [85, 88]), l.id).toBe(true);
   });
 });
 
-describe.each(levels.slice(0, 5).map((l) => [l.id, l.start] as const))('early band: level %s', (_, s) => {
+describe.each(act1.slice(0, 1).map((l) => [l.id, l.start] as const))('early band: level %s', (_, s) => {
   it('sits in the early band', () => inBand(s, BANDS.early));
 
   it('is clustered in the middle, outer ring mostly empty', () => {
@@ -115,16 +110,20 @@ describe.each(levels.slice(0, 5).map((l) => [l.id, l.start] as const))('early ba
   });
 });
 
-describe.each(levels.slice(5, 10).map((l) => [l.id, l.start] as const))('middle band: level %s', (_, s) => {
+describe.each(act1.slice(1, 2).map((l) => [l.id, l.start] as const))('middle band: level %s', (_, s) => {
   it('sits in the middle band', () => inBand(s, BANDS.middle));
 
-  it('has no single-cell pieces', () => {
+  it('has no single-cell pieces, and some 4 and 5 cell pieces', () => {
     expect(s.blocks.every((b) => b.shape.length >= 2)).toBe(true);
+    expect(s.blocks.filter((b) => b.shape.length >= 4).length).toBeGreaterThanOrEqual(3);
   });
 });
 
-describe.each(levels.slice(10, 20).map((l) => [l.id, l.start] as const))('late band: level %s', (id, s) => {
-  it('sits in the late band', () => inBand(s, BANDS.late));
+/** Late boards: level 3 ramps in at 80 percent, below the band's 85. */
+const lateBand = { ...BANDS.late, fill: [0.8, BANDS.late.fill[1]] as const };
+
+describe.each(act1.slice(2).map((l) => [l.id, l.start] as const))('late band: level %s', (_, s) => {
+  it('sits in the late band', () => inBand(s, lateBand));
 
   it('keeps two nests of L\'s and two long bars as landmarks (job 018)', () => {
     const groups = new Map<string, Block[]>();
@@ -141,10 +140,8 @@ describe.each(levels.slice(10, 20).map((l) => [l.id, l.start] as const))('late b
     for (const b of s.blocks) expect(isThick(b.shape), b.id).toBe(false);
   });
 
-  it('has two split pieces on levels 11 to 15 and three on 16 to 20, each with its order forced (job 021)', () => {
-    const found = splits(s);
-    expect(found).toHaveLength(Number(id) <= 15 ? 2 : 3);
-    for (const x of found) expect(x.forced && !x.locked, x.id).toBe(true);
+  it('has no split pieces: they open act 2 (job 024)', () => {
+    expect(splits(s)).toEqual([]);
   });
 
   it('cages a piece inside a U that waits for it (job 019)', () => {
@@ -167,49 +164,7 @@ describe.each(levels.slice(10, 20).map((l) => [l.id, l.start] as const))('late b
       expect(g.some((b) => [...lanes.get(b.id)!].some((x) => ids.has(x))), `${name} pieces depend on each other`).toBe(true);
     }
   });
-});
 
-// Job 021: split pieces carry the puzzle.
-describe.each(levels.slice(20, 23).map((l) => [l.id, l.start] as const))('split level %s', (_, s) => {
-  it('sits in the late band, with its landmarks', () => {
-    inBand(s, BANDS.late);
-    expect(new Set(s.blocks.filter((b) => b.group).map((b) => b.group)).size).toBe(2);
-  });
-
-  it('has twelve split pieces, each with its order forced and none locked', () => {
-    const found = splits(s);
-    expect(found).toHaveLength(12);
-    for (const x of found) expect(x.forced && !x.locked, x.id).toBe(true);
-  });
-
-  it('mixes colours as levels 6 to 20 do', () => {
-    for (const c of colourSpread(s)) expect(c.ratio, c.colour).toBeGreaterThanOrEqual(0.9);
-    const c = clumping(s);
-    expect(c.share).toBeLessThan(c.random);
-  });
-});
-
-describe('the late band ends at reference density', () => {
-  it('level 20 is at 90 percent', () => {
-    const s = levels[19]!.start;
-    expect(fill(s)).toBeGreaterThanOrEqual(0.9);
-  });
-});
-
-// Job 012. Ratio = a colour's average distance to its own rail against every piece's
-// distance to that rail. 1 means colour says nothing about position.
-describe.each(levels.slice(5, 20).map((l) => [l.id, l.start] as const))('colours mixed: level %s', (_, s) => {
-  it('keeps every colour near the board average distance from its rail, not at its rail', () => {
-    for (const c of colourSpread(s)) expect(c.ratio, `${c.colour} ${c.own.toFixed(2)} vs ${c.board.toFixed(2)}`).toBeGreaterThanOrEqual(0.9);
-  });
-
-  it('intermingles: same-colour neighbours below a random deal (job 018)', () => {
-    const c = clumping(s);
-    expect(c.share, `${(100 * c.share).toFixed(0)}% vs ${(100 * c.random).toFixed(0)}%`).toBeLessThan(c.random);
-  });
-});
-
-describe.each(levels.slice(10, 20).map((l) => [l.id, l.start] as const))('dependency depth: level %s', (_, s) => {
   it('buries a piece behind three or more others, as a late board must', () => {
     const d = dependency(s);
     expect(d.buried).toBeGreaterThanOrEqual(3);
@@ -217,10 +172,36 @@ describe.each(levels.slice(10, 20).map((l) => [l.id, l.start] as const))('depend
   });
 });
 
-describe('middle band as a whole', () => {
-  it('has some 4 and 5 cell pieces', () => {
-    const big = levels.slice(5, 10).flatMap((l) => l.start.blocks).filter((b) => b.shape.length >= 4);
-    expect(big.length).toBeGreaterThanOrEqual(3);
+// Act 2 (jobs 021, 024): split pieces carry the puzzle.
+describe.each(splitAct.map((l, i) => [l.id, l.start, [8, 10, 12, 12, 12][i]!] as const))('split level %s', (_, s, count) => {
+  it('sits in the late band, with its landmarks', () => {
+    inBand(s, BANDS.late);
+    expect(new Set(s.blocks.filter((b) => b.group).map((b) => b.group)).size).toBe(2);
+  });
+
+  it(`has ${count} split pieces, each with its order forced and none locked`, () => {
+    const found = splits(s);
+    expect(found).toHaveLength(count);
+    for (const x of found) expect(x.forced && !x.locked, x.id).toBe(true);
+  });
+});
+
+describe('the late band ends at reference density', () => {
+  it('level 10 is at 90 percent', () => {
+    expect(fill(act1[9]!.start)).toBeGreaterThanOrEqual(0.9);
+  });
+});
+
+// Job 012. Ratio = a colour's average distance to its own rail against every piece's
+// distance to that rail. 1 means colour says nothing about position. Level 1 teaches, unmixed.
+describe.each(levels.slice(1).map((l) => [l.id, l.start] as const))('colours mixed: level %s', (_, s) => {
+  it('keeps every colour near the board average distance from its rail, not at its rail', () => {
+    for (const c of colourSpread(s)) expect(c.ratio, `${c.colour} ${c.own.toFixed(2)} vs ${c.board.toFixed(2)}`).toBeGreaterThanOrEqual(0.9);
+  });
+
+  it('intermingles: same-colour neighbours below a random deal (job 018)', () => {
+    const c = clumping(s);
+    expect(c.share, `${(100 * c.share).toFixed(0)}% vs ${(100 * c.random).toFixed(0)}%`).toBeLessThan(c.random);
   });
 });
 
