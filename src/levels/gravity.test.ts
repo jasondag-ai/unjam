@@ -1,27 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { applyExit, canExit, isSettled, isSolved, isStuck, validateState } from '../engine';
-import { makeRandom } from '../search/search';
-import { BANDS } from './bands';
+import { applyExit, isSettled, isSolved, validateState } from '../engine';
+import { clumping, colourSpread } from '../search/measures';
+import { strandRate } from '../search/gravity';
+import { BANDS, COLOUR_SHARE } from './bands';
 import { gravityLevels } from './gravity.generated';
 import { world1 } from './world1';
 
-// Job 022 (spike): gravity levels, after the main list.
+// Job 024, act 3: five gravity levels after the fifteen tap levels.
 describe('gravity levels', () => {
-  it('come last, as levels 24 to 26, each pulling toward a different rail', () => {
-    expect(world1.levels.slice(-3).map((l) => l.id)).toEqual(['24', '25', '26']);
-    expect(new Set(gravityLevels.map((l) => l.start.gravity)).size).toBe(3);
+  it('come last, as levels 16 to 20, the pull turning from level to level', () => {
+    expect(world1.levels.slice(-5).map((l) => l.id)).toEqual(['16', '17', '18', '19', '20']);
+    expect(world1.levels.slice(-5)).toEqual(gravityLevels);
+    const pulls = gravityLevels.map((l) => l.start.gravity);
+    expect(new Set(pulls).size).toBe(4);
+    for (let i = 1; i < pulls.length; i++) expect(pulls[i]).not.toBe(pulls[i - 1]);
   });
 
   describe.each(gravityLevels.map((l) => [l.id, l] as const))('level %s', (_, level) => {
     const s = level.start;
 
-    it('is a settled board at middle-band size and density', () => {
+    it('is a settled late-band board at 85 to 88 percent', () => {
       expect(() => validateState(s)).not.toThrow();
       expect(isSettled(s)).toBe(true);
-      expect([s.cols, s.rows]).toEqual([BANDS.middle.cols, BANDS.middle.rows]);
+      expect([s.cols, s.rows]).toEqual([BANDS.late.cols, BANDS.late.rows]);
       const fill = s.blocks.reduce((n, b) => n + b.shape.length, 0) / (s.rows * s.cols);
-      expect(fill).toBeGreaterThanOrEqual(BANDS.middle.fill[0]);
-      expect(fill).toBeLessThanOrEqual(BANDS.middle.fill[1]);
+      expect(Math.round(100 * fill)).toBeGreaterThanOrEqual(85);
+      expect(Math.round(100 * fill)).toBeLessThanOrEqual(88);
     });
 
     it('clears by its stored solution, one tap per piece', () => {
@@ -31,18 +35,22 @@ describe('gravity levels', () => {
       expect(isSolved(state)).toBe(true);
     });
 
-    it('can be stranded by taps alone: some order of free taps leaves it stuck', () => {
-      let stranded = false;
-      for (let seed = 1; seed < 400 && !stranded; seed++) {
-        let state = s;
-        const rand = makeRandom(seed);
-        while (!isSolved(state) && !isStuck(state)) {
-          const free = state.blocks.filter((b) => canExit(state, b.id));
-          state = applyExit(state, free[Math.floor(rand() * free.length)]!.id)!;
-        }
-        stranded = isStuck(state);
+    it('mixes colours as the tap levels do: shares, spread 0.9, neighbours below a random deal', () => {
+      for (const colour of ['amber', 'cyan', 'violet', 'mint'] as const) {
+        const share = s.blocks.filter((b) => b.colour === colour).length / s.blocks.length;
+        expect(share >= COLOUR_SHARE[0] && share <= COLOUR_SHARE[1], `${colour} ${share.toFixed(2)}`).toBe(true);
       }
-      expect(stranded).toBe(true);
+      for (const c of colourSpread(s)) expect(c.ratio, c.colour).toBeGreaterThanOrEqual(0.9);
+      const c = clumping(s);
+      expect(c.share).toBeLessThan(c.random);
     });
+
+    it('strands some random plays', () => {
+      expect(strandRate(s, 200, 7).stranded).toBeGreaterThan(0);
+    });
+
+    // Job 024 item 5: four of the five strand more than one random play in four; softening
+    // them is Jason's call (HANDOFF, Needs).
+    it.todo('strands no more than one random play in four');
   });
 });

@@ -1,6 +1,6 @@
-// Job 022 (spike): three gravity levels at middle-band density, each pulling toward a different
-// rail, appended after the main list (src/levels/gravity.generated.ts). Run: npm run gravity.
-//   --level n   gravity level n's entry (1 to 3)
+// Gravity levels 16 to 20 (job 024, act 3): late-band boards at 85 to 88 percent, the pull
+// turning from level to level (src/levels/gravity.generated.ts). Run: npm run gravity.
+//   --level n   gravity level n's entry (1 to 5)
 //   --head / --tail   the module's opening and closing lines
 import { boardToText } from '../src/engine';
 import { BANDS, COLOUR_SHARE } from '../src/levels/bands';
@@ -8,14 +8,16 @@ import { clumping, colourSpread } from '../src/search/measures';
 import { searchGravity, strandRate } from '../src/search/gravity';
 
 const RAILS = { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' } as const;
-/** Like middle levels 7 to 9; the pull goes down, then left, then up. */
+/** Down, left, up, right, then down again, filling 85 to 88 percent. */
 const PLANS = [
-  { gravity: 'bottom', pieces: 33, cells: 82 },
-  { gravity: 'left', pieces: 36, cells: 86 },
-  { gravity: 'top', pieces: 39, cells: 90 },
+  { gravity: 'bottom', cells: 153 },
+  { gravity: 'left', cells: 155 },
+  { gravity: 'top', cells: 156 },
+  { gravity: 'right', cells: 157 },
+  { gravity: 'bottom', cells: 158 },
 ] as const;
-/** Gravity levels follow the 23 levels of world 1. */
-const FIRST = 24;
+/** Gravity levels follow the 15 tap levels. */
+const FIRST = 16;
 
 const args = (globalThis as unknown as { process: { argv: string[] } }).process.argv.slice(2);
 const out: string[] = [];
@@ -33,11 +35,12 @@ console.log(out.join('\n'));
 
 function level(i: number): void {
   const plan = PLANS[i]!;
-  const m = BANDS.middle;
+  const late = BANDS.late;
   const result = searchGravity({
-    rows: m.rows, cols: m.cols, pieces: plan.pieces, cells: plan.cells, kinds: m.kinds, sizeWeights: m.sizeWeights,
-    smallShare: m.smallShare, colourShare: COLOUR_SHARE, gravity: plan.gravity, colourMix: 0.9,
-    liftPull: 1.5, farPull: 10, headroom: 5, colourSteps: 20000, playouts: 100, tries: 40, seed: 2200 + i,
+    rows: late.rows, cols: late.cols, pieces: 48, cells: plan.cells, kinds: late.kinds, sizeWeights: late.sizeWeights,
+    kindWeights: late.kindWeights, singleShare: late.singleShare, smallShare: late.smallShare, colourShare: COLOUR_SHARE,
+    gravity: plan.gravity, colourMix: 0.9, mixSteps: 5000, strandSteps: 200, strandTarget: [0.05, 0.25], playouts: 32,
+    tries: 40, seed: 2400 + i, verbose: true,
   }, RAILS);
   if (!result) throw new Error(`No gravity board for level ${FIRST + i}`);
   // Relabel in reading order, one character each, as the main levels are.
@@ -52,7 +55,7 @@ function level(i: number): void {
   const filled = s.blocks.reduce((n, b) => n + b.shape.length, 0);
   console.error(`gravity level ${FIRST + i}: ${s.blocks.length} pieces, ${filled} cells, stranded ${strands.stranded} of ${strands.runs}`);
   out.push(`  // Level ${FIRST + i} (gravity ${plan.gravity}, ${s.cols}x${s.rows}): ${s.blocks.length} pieces, ${filled} of ${s.cols * s.rows} cells.`);
-  out.push(`  // ${result.falls} falls along the solution; ${result.free} free at the start; random play strands ${strands.stranded} of ${strands.runs}.`);
+  out.push(`  // ${result.free} free at the start; random play strands ${strands.stranded} of ${strands.runs}.`);
   out.push(`  // Spread ${spread}; same-colour neighbours ${(100 * clump.share).toFixed(0)}% (random ${(100 * clump.random).toFixed(0)}%).`);
   for (const line of boardToText(s).split('\n')) out.push(`  //   ${line}`);
   out.push(`  {`, `    id: '${FIRST + i}',`, `    start: {`, `      rows: ${s.rows},`, `      cols: ${s.cols},`, `      gravity: '${plan.gravity}',`);

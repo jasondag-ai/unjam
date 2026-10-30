@@ -2,199 +2,404 @@
 import type { Level } from './types';
 
 export const gravityLevels: readonly Level[] = [
-  // Level 24 (gravity bottom, 10x12): 33 pieces, 82 of 120 cells.
-  // 45 falls along the solution; 11 free at the start; random play strands 712 of 2000.
-  // Spread amber 0.54, cyan 0.57, violet 0.54, mint 0.77; same-colour neighbours 27% (random 23%).
-  //   + a a a a a a a a a a +
-  //   m A . B C D . . . . . c
-  //   m A . B C D . . . . . c
-  //   m E . G G F H H H H I c
-  //   m E F F F F J K . . I c
-  //   m L . . J J J K . . M c
-  //   m L L N N . O O O O M c
-  //   m P . Q Q . . R S T T c
-  //   m P . . U U . R S T . c
-  //   m P . . V . . W X X X c
-  //   m Y Y . V . . W W Z a c
-  //   m b c d e . . f Z Z a c
-  //   m b c d e . . f f g g c
-  //   + v v v v v v v v v v +
+  // Level 16 (gravity bottom, 12x15): 48 pieces, 153 of 180 cells.
+  // 8 free at the start; random play strands 1795 of 2000.
+  // Spread amber 0.92, cyan 0.91, violet 0.99, mint 0.93; same-colour neighbours 22% (random 24%).
+  //   + a a a a a a a a a a a a +
+  //   m . . . . . . . . . . . A c
+  //   m B . . . . . . . . C D E c
+  //   m F . . . . . . . . G G H c
+  //   m I J J K L M N N O O P H c
+  //   m I Q K K L M R R R R P S c
+  //   m I Q T T L M U U V W P S c
+  //   m X Q Y T T U U Z V W a a c
+  //   m X X b b b b Z Z V W a c c
+  //   m d X d e e f f Z V c c c c
+  //   m d d d g h h f f V c i i c
+  //   m j j g g k h l l m i i m c
+  //   m n j o g h h p l m m m m c
+  //   m n j q q q p p l r s s s c
+  //   m j j q t p p l l r r u s c
+  //   m q q q p p v v v r s s s c
+  //   + v v v v v v v v v v v v +
   {
-    id: '24',
+    id: '16',
     start: {
-      rows: 12,
-      cols: 10,
+      rows: 15,
+      cols: 12,
       gravity: 'bottom',
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
-        { id: 'A', colour: 'mint', anchor: { row: 0, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'B', colour: 'cyan', anchor: { row: 0, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'C', colour: 'cyan', anchor: { row: 0, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'D', colour: 'amber', anchor: { row: 0, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'E', colour: 'amber', anchor: { row: 2, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'F', colour: 'mint', anchor: { row: 2, col: 1 }, shape: [{ row: 0, col: 3 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 3 }] },
-        { id: 'G', colour: 'amber', anchor: { row: 2, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'H', colour: 'amber', anchor: { row: 2, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }] },
-        { id: 'I', colour: 'cyan', anchor: { row: 2, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'J', colour: 'cyan', anchor: { row: 3, col: 3 }, shape: [{ row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
-        { id: 'K', colour: 'cyan', anchor: { row: 3, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'L', colour: 'mint', anchor: { row: 4, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
-        { id: 'M', colour: 'amber', anchor: { row: 4, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'N', colour: 'violet', anchor: { row: 5, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'O', colour: 'amber', anchor: { row: 5, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }] },
-        { id: 'P', colour: 'amber', anchor: { row: 6, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
-        { id: 'Q', colour: 'violet', anchor: { row: 6, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'R', colour: 'mint', anchor: { row: 6, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'S', colour: 'mint', anchor: { row: 6, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'T', colour: 'cyan', anchor: { row: 6, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }] },
-        { id: 'U', colour: 'violet', anchor: { row: 7, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'V', colour: 'violet', anchor: { row: 8, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'W', colour: 'mint', anchor: { row: 8, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
-        { id: 'X', colour: 'violet', anchor: { row: 8, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
-        { id: 'Y', colour: 'violet', anchor: { row: 9, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'Z', colour: 'violet', anchor: { row: 9, col: 7 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
-        { id: 'a', colour: 'cyan', anchor: { row: 9, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'b', colour: 'mint', anchor: { row: 10, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'c', colour: 'mint', anchor: { row: 10, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'd', colour: 'violet', anchor: { row: 10, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'e', colour: 'violet', anchor: { row: 10, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'f', colour: 'mint', anchor: { row: 10, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
-        { id: 'g', colour: 'cyan', anchor: { row: 11, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'A', colour: 'mint', anchor: { row: 0, col: 11 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'B', colour: 'cyan', anchor: { row: 1, col: 0 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'C', colour: 'violet', anchor: { row: 1, col: 9 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'D', colour: 'mint', anchor: { row: 1, col: 10 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'E', colour: 'mint', anchor: { row: 1, col: 11 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'F', colour: 'violet', anchor: { row: 2, col: 0 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'G', colour: 'mint', anchor: { row: 2, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'H', colour: 'violet', anchor: { row: 2, col: 11 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'I', colour: 'mint', anchor: { row: 3, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 'J', colour: 'amber', anchor: { row: 3, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'K', colour: 'mint', anchor: { row: 3, col: 2 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'L', colour: 'amber', anchor: { row: 3, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 'M', colour: 'amber', anchor: { row: 3, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 'N', colour: 'cyan', anchor: { row: 3, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'O', colour: 'violet', anchor: { row: 3, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'P', colour: 'amber', anchor: { row: 3, col: 10 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 'Q', colour: 'cyan', anchor: { row: 4, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 'R', colour: 'mint', anchor: { row: 4, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }] },
+        { id: 'S', colour: 'violet', anchor: { row: 4, col: 11 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'T', colour: 'cyan', anchor: { row: 5, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
+        { id: 'U', colour: 'amber', anchor: { row: 5, col: 5 }, shape: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'V', colour: 'cyan', anchor: { row: 5, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }, { row: 3, col: 0 }, { row: 4, col: 0 }] },
+        { id: 'W', colour: 'violet', anchor: { row: 5, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 'X', colour: 'violet', anchor: { row: 6, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 1 }] },
+        { id: 'Y', colour: 'amber', anchor: { row: 6, col: 2 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'Z', colour: 'amber', anchor: { row: 6, col: 6 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 1 }] },
+        { id: 'a', colour: 'cyan', anchor: { row: 6, col: 10 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }] },
+        { id: 'b', colour: 'cyan', anchor: { row: 7, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }] },
+        { id: 'c', colour: 'violet', anchor: { row: 7, col: 9 }, shape: [{ row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 2, col: 0 }] },
+        { id: 'd', colour: 'violet', anchor: { row: 8, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
+        { id: 'e', colour: 'amber', anchor: { row: 8, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'f', colour: 'amber', anchor: { row: 8, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
+        { id: 'g', colour: 'cyan', anchor: { row: 9, col: 2 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 1 }] },
+        { id: 'h', colour: 'cyan', anchor: { row: 9, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'i', colour: 'cyan', anchor: { row: 9, col: 9 }, shape: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'j', colour: 'mint', anchor: { row: 10, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 1 }, { row: 3, col: 0 }, { row: 3, col: 1 }] },
+        { id: 'k', colour: 'mint', anchor: { row: 10, col: 4 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'l', colour: 'cyan', anchor: { row: 10, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 1 }, { row: 3, col: 0 }, { row: 3, col: 1 }] },
+        { id: 'm', colour: 'violet', anchor: { row: 10, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 3 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 3 }] },
+        { id: 'n', colour: 'mint', anchor: { row: 11, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'o', colour: 'violet', anchor: { row: 11, col: 2 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'p', colour: 'violet', anchor: { row: 11, col: 3 }, shape: [{ row: 0, col: 3 }, { row: 1, col: 2 }, { row: 1, col: 3 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 3, col: 0 }, { row: 3, col: 1 }] },
+        { id: 'q', colour: 'mint', anchor: { row: 12, col: 0 }, shape: [{ row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }, { row: 1, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }] },
+        { id: 'r', colour: 'cyan', anchor: { row: 12, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 0 }] },
+        { id: 's', colour: 'cyan', anchor: { row: 12, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }] },
+        { id: 't', colour: 'amber', anchor: { row: 13, col: 3 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'u', colour: 'cyan', anchor: { row: 13, col: 10 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'v', colour: 'violet', anchor: { row: 14, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
       ],
     },
-    solution: ['d', 'e', 'V', 'U', 'Q', 'N', 'b', 'D', 'a', 'g', 'C', 'B', 'I', 'G', 'M', 'c', 'Y', 'L', 'A', 'K', 'E', 'R', 'S', 'P', 'W', 'f', 'Z', 'X', 'T', 'J', 'H', 'O', 'F'],
+    solution: ['I', 'v', 'A', 'J', 'L', 'M', 'n', 'j', 's', 'u', 'G', 'E', 'q', 'K', 'R', 'D', 'P', 'r', 'N', 'U', 'm', 'Z', 'i', 'c', 'W', 'T', 'b', 'e', 'Q', 'B', 'f', 'a', 'S', 'H', 'V', 'O', 'l', 'p', 'h', 'g', 't', 'C', 'Y', 'o', 'd', 'X', 'F', 'k'],
   },
-  // Level 25 (gravity left, 10x12): 36 pieces, 86 of 120 cells.
-  // 52 falls along the solution; 12 free at the start; random play strands 853 of 2000.
-  // Spread amber 0.90, cyan 0.77, violet 0.70, mint 0.63; same-colour neighbours 48% (random 23%).
-  //   + a a a a a a a a a a +
-  //   m A B . C . . D E . . c
-  //   m A B C C D D D E . . c
-  //   m A B . . . . . E . . c
-  //   m F F G H I J J E . . c
-  //   m K K G H I . . E . . c
-  //   m L . . M N . . O . . c
-  //   m L L M M N P P O . . c
-  //   m Q R S S . . . T U U c
-  //   m Q R V S . . . T W W c
-  //   m X X V Y Y Z a T b b c
-  //   m c d d e e Z a a f f c
-  //   m c g g h h Z i i j j c
-  //   + v v v v v v v v v v +
+  // Level 17 (gravity left, 12x15): 48 pieces, 155 of 180 cells.
+  // 10 free at the start; random play strands 1310 of 2000.
+  // Spread amber 0.94, cyan 0.98, violet 0.96, mint 1.00; same-colour neighbours 23% (random 24%).
+  //   + a a a a a a a a a a a a +
+  //   m A A A A B B C C D E . . c
+  //   m A G F A B H H H D E . . c
+  //   m I F F I B B J K L . . . c
+  //   m I I I I J J J K L . . . c
+  //   m M M N N J O P P Q . . . c
+  //   m M R N S S T T P Q . . . c
+  //   m M N N S V U T T W . . . c
+  //   m M M S S U U U X W W . . c
+  //   m Y Y Z Z Z Z Z X X W . . c
+  //   m a Y Y b b b c c X d . . c
+  //   m a e Y f b c c g g d h i c
+  //   m a a a j j c g g k l m m c
+  //   m a n n j o p o q k l r s c
+  //   m a n j j o o o q q t r s c
+  //   m u n n v v v v q t t r s c
+  //   + v v v v v v v v v v v v +
   {
-    id: '25',
+    id: '17',
     start: {
-      rows: 12,
-      cols: 10,
+      rows: 15,
+      cols: 12,
       gravity: 'left',
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
-        { id: 'A', colour: 'amber', anchor: { row: 0, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
-        { id: 'B', colour: 'violet', anchor: { row: 0, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
-        { id: 'C', colour: 'amber', anchor: { row: 0, col: 2 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
-        { id: 'D', colour: 'violet', anchor: { row: 0, col: 4 }, shape: [{ row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
-        { id: 'E', colour: 'amber', anchor: { row: 0, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }, { row: 3, col: 0 }, { row: 4, col: 0 }] },
-        { id: 'F', colour: 'mint', anchor: { row: 3, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'G', colour: 'mint', anchor: { row: 3, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'H', colour: 'mint', anchor: { row: 3, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'I', colour: 'mint', anchor: { row: 3, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'J', colour: 'mint', anchor: { row: 3, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'K', colour: 'mint', anchor: { row: 4, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'L', colour: 'mint', anchor: { row: 5, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
-        { id: 'M', colour: 'cyan', anchor: { row: 5, col: 2 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
-        { id: 'N', colour: 'cyan', anchor: { row: 5, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'O', colour: 'cyan', anchor: { row: 5, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'P', colour: 'cyan', anchor: { row: 6, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'Q', colour: 'violet', anchor: { row: 7, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'R', colour: 'violet', anchor: { row: 7, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'S', colour: 'cyan', anchor: { row: 7, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }] },
-        { id: 'T', colour: 'cyan', anchor: { row: 7, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
-        { id: 'U', colour: 'amber', anchor: { row: 7, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'V', colour: 'mint', anchor: { row: 8, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'W', colour: 'amber', anchor: { row: 8, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'X', colour: 'violet', anchor: { row: 9, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'Y', colour: 'mint', anchor: { row: 9, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'Z', colour: 'cyan', anchor: { row: 9, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
-        { id: 'a', colour: 'cyan', anchor: { row: 9, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
-        { id: 'b', colour: 'amber', anchor: { row: 9, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'c', colour: 'violet', anchor: { row: 10, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'd', colour: 'violet', anchor: { row: 10, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'e', colour: 'mint', anchor: { row: 10, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'f', colour: 'amber', anchor: { row: 10, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'g', colour: 'violet', anchor: { row: 11, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'h', colour: 'violet', anchor: { row: 11, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'i', colour: 'violet', anchor: { row: 11, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'j', colour: 'amber', anchor: { row: 11, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'A', colour: 'amber', anchor: { row: 0, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 1, col: 0 }, { row: 1, col: 3 }] },
+        { id: 'B', colour: 'amber', anchor: { row: 0, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'C', colour: 'mint', anchor: { row: 0, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'D', colour: 'amber', anchor: { row: 0, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'E', colour: 'amber', anchor: { row: 0, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'F', colour: 'violet', anchor: { row: 1, col: 1 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'G', colour: 'cyan', anchor: { row: 1, col: 1 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'H', colour: 'cyan', anchor: { row: 1, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
+        { id: 'I', colour: 'violet', anchor: { row: 2, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 3 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 3 }] },
+        { id: 'J', colour: 'amber', anchor: { row: 2, col: 4 }, shape: [{ row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 2, col: 0 }] },
+        { id: 'K', colour: 'violet', anchor: { row: 2, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'L', colour: 'mint', anchor: { row: 2, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'M', colour: 'mint', anchor: { row: 4, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }, { row: 2, col: 0 }, { row: 3, col: 0 }, { row: 3, col: 1 }] },
+        { id: 'N', colour: 'cyan', anchor: { row: 4, col: 1 }, shape: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'O', colour: 'violet', anchor: { row: 4, col: 5 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'P', colour: 'cyan', anchor: { row: 4, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }] },
+        { id: 'Q', colour: 'cyan', anchor: { row: 4, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'R', colour: 'violet', anchor: { row: 5, col: 1 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'S', colour: 'violet', anchor: { row: 5, col: 2 }, shape: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'T', colour: 'cyan', anchor: { row: 5, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
+        { id: 'U', colour: 'cyan', anchor: { row: 6, col: 4 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
+        { id: 'V', colour: 'cyan', anchor: { row: 6, col: 4 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'W', colour: 'amber', anchor: { row: 6, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 1 }] },
+        { id: 'X', colour: 'amber', anchor: { row: 7, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 1 }] },
+        { id: 'Y', colour: 'mint', anchor: { row: 8, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 2, col: 2 }] },
+        { id: 'Z', colour: 'cyan', anchor: { row: 8, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }] },
+        { id: 'a', colour: 'mint', anchor: { row: 9, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 3, col: 0 }, { row: 4, col: 0 }] },
+        { id: 'b', colour: 'mint', anchor: { row: 9, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 1 }] },
+        { id: 'c', colour: 'mint', anchor: { row: 9, col: 5 }, shape: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 0 }] },
+        { id: 'd', colour: 'violet', anchor: { row: 9, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'e', colour: 'violet', anchor: { row: 10, col: 1 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'f', colour: 'violet', anchor: { row: 10, col: 3 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'g', colour: 'violet', anchor: { row: 10, col: 6 }, shape: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'h', colour: 'mint', anchor: { row: 10, col: 10 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'i', colour: 'amber', anchor: { row: 10, col: 11 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'j', colour: 'violet', anchor: { row: 11, col: 2 }, shape: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'k', colour: 'amber', anchor: { row: 11, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'l', colour: 'amber', anchor: { row: 11, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'm', colour: 'cyan', anchor: { row: 11, col: 10 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'n', colour: 'mint', anchor: { row: 12, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'o', colour: 'mint', anchor: { row: 12, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
+        { id: 'p', colour: 'amber', anchor: { row: 12, col: 5 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'q', colour: 'amber', anchor: { row: 12, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 0 }] },
+        { id: 'r', colour: 'mint', anchor: { row: 12, col: 10 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 's', colour: 'mint', anchor: { row: 12, col: 11 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 't', colour: 'amber', anchor: { row: 13, col: 8 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'u', colour: 'violet', anchor: { row: 14, col: 0 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'v', colour: 'violet', anchor: { row: 14, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }] },
       ],
     },
-    solution: ['g', 'h', 'K', 'F', 'G', 'H', 'I', 'J', 'c', 'd', 'e', 'U', 'X', 'W', 'b', 'f', 'j', 'L', 'O', 'P', 'Q', 'R', 'V', 'Y', 'i', 'N', 'T', 'a', 'M', 'Z', 'S', 'A', 'B', 'C', 'D', 'E'],
+    solution: ['v', 'E', 'D', 'H', 'a', 'm', 'Q', 'P', 'i', 'M', 'B', 'A', 'J', 'C', 'W', 'T', 'X', 'Z', 'u', 'n', 'j', 'e', 'Y', 'f', 'l', 'b', 'c', 'd', 'g', 'h', 'k', 'q', 'U', 'V', 'S', 'O', 'N', 'R', 'I', 'F', 'G', 'K', 'L', 'p', 'o', 't', 'r', 's'],
   },
-  // Level 26 (gravity top, 10x12): 39 pieces, 90 of 120 cells.
-  // 86 falls along the solution; 15 free at the start; random play strands 769 of 2000.
-  // Spread amber 0.60, cyan 0.95, violet 0.28, mint 0.58; same-colour neighbours 39% (random 23%).
-  //   + a a a a a a a a a a +
-  //   m A B B B . C C D E F c
-  //   m A G G . H H . D E F c
-  //   m I I J J K . . L M N c
-  //   m O O O P K . . L M N c
-  //   m Q Q Q P R R . S T . c
-  //   m U U V V W . . S T . c
-  //   m X X X V W . . Y Y . c
-  //   m Z Z a a a . . . b b c
-  //   m c c c d e e e . . f c
-  //   m g g d d e h h h h f c
-  //   m . . . . . i j k l m c
-  //   m . . . . . i j k l m c
-  //   + v v v v v v v v v v +
+  // Level 18 (gravity top, 12x15): 48 pieces, 156 of 180 cells.
+  // 9 free at the start; random play strands 921 of 2000.
+  // Spread amber 0.91, cyan 0.93, violet 0.91, mint 1.00; same-colour neighbours 23% (random 24%).
+  //   + a a a a a a a a a a a a +
+  //   m B B A A A C D D D D E E c
+  //   m B F A G G C D H J D I E c
+  //   m A A A K G H H H J I I E c
+  //   m L L L G G M M H I I E E c
+  //   m N N L O O O M P P Q Q Q c
+  //   m L L L R O S M T P Q U Q c
+  //   m W V V R O M M X X U U Y c
+  //   m V V R R R Z Z a X U b Y c
+  //   m V c c c d d Z Z X X e Y c
+  //   m f g g g h d d i j e e Y c
+  //   m f k k k h l i i j e m Y c
+  //   m f n n o l l p p j m m q c
+  //   m . . . . . . . . r r m q c
+  //   m . . . . . . . . s t u q c
+  //   m . . . . . . . . v t u u c
+  //   + v v v v v v v v v v v v +
   {
-    id: '26',
+    id: '18',
     start: {
-      rows: 12,
-      cols: 10,
+      rows: 15,
+      cols: 12,
       gravity: 'top',
       rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
       blocks: [
-        { id: 'A', colour: 'mint', anchor: { row: 0, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'B', colour: 'cyan', anchor: { row: 0, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
-        { id: 'C', colour: 'amber', anchor: { row: 0, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'D', colour: 'amber', anchor: { row: 0, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'E', colour: 'cyan', anchor: { row: 0, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'F', colour: 'cyan', anchor: { row: 0, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'G', colour: 'mint', anchor: { row: 1, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'H', colour: 'amber', anchor: { row: 1, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'I', colour: 'cyan', anchor: { row: 2, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'J', colour: 'cyan', anchor: { row: 2, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'K', colour: 'amber', anchor: { row: 2, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'L', colour: 'amber', anchor: { row: 2, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'M', colour: 'amber', anchor: { row: 2, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'N', colour: 'cyan', anchor: { row: 2, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'O', colour: 'mint', anchor: { row: 3, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
-        { id: 'P', colour: 'cyan', anchor: { row: 3, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'Q', colour: 'amber', anchor: { row: 4, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
-        { id: 'R', colour: 'amber', anchor: { row: 4, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'S', colour: 'amber', anchor: { row: 4, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'T', colour: 'cyan', anchor: { row: 4, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'U', colour: 'mint', anchor: { row: 5, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'V', colour: 'cyan', anchor: { row: 5, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }] },
-        { id: 'W', colour: 'amber', anchor: { row: 5, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'X', colour: 'cyan', anchor: { row: 6, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
-        { id: 'Y', colour: 'cyan', anchor: { row: 6, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'Z', colour: 'mint', anchor: { row: 7, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'a', colour: 'mint', anchor: { row: 7, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
-        { id: 'b', colour: 'amber', anchor: { row: 7, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'c', colour: 'violet', anchor: { row: 8, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
-        { id: 'd', colour: 'violet', anchor: { row: 8, col: 2 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
-        { id: 'e', colour: 'violet', anchor: { row: 8, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }] },
-        { id: 'f', colour: 'violet', anchor: { row: 8, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'g', colour: 'violet', anchor: { row: 9, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
-        { id: 'h', colour: 'violet', anchor: { row: 9, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }] },
-        { id: 'i', colour: 'mint', anchor: { row: 10, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'j', colour: 'mint', anchor: { row: 10, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'k', colour: 'violet', anchor: { row: 10, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'l', colour: 'mint', anchor: { row: 10, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
-        { id: 'm', colour: 'violet', anchor: { row: 10, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'A', colour: 'amber', anchor: { row: 0, col: 0 }, shape: [{ row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }, { row: 1, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }] },
+        { id: 'B', colour: 'amber', anchor: { row: 0, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }] },
+        { id: 'C', colour: 'mint', anchor: { row: 0, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'D', colour: 'amber', anchor: { row: 0, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 1, col: 0 }, { row: 1, col: 3 }] },
+        { id: 'E', colour: 'cyan', anchor: { row: 0, col: 10 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 1 }, { row: 3, col: 0 }, { row: 3, col: 1 }] },
+        { id: 'F', colour: 'mint', anchor: { row: 1, col: 1 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'G', colour: 'mint', anchor: { row: 1, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'H', colour: 'amber', anchor: { row: 1, col: 5 }, shape: [{ row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 2, col: 2 }] },
+        { id: 'I', colour: 'cyan', anchor: { row: 1, col: 8 }, shape: [{ row: 0, col: 2 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'J', colour: 'mint', anchor: { row: 1, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'K', colour: 'mint', anchor: { row: 2, col: 3 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'L', colour: 'cyan', anchor: { row: 3, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }] },
+        { id: 'M', colour: 'cyan', anchor: { row: 3, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 1 }, { row: 3, col: 0 }, { row: 3, col: 1 }] },
+        { id: 'N', colour: 'violet', anchor: { row: 4, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'O', colour: 'violet', anchor: { row: 4, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 1 }, { row: 2, col: 1 }] },
+        { id: 'P', colour: 'cyan', anchor: { row: 4, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }] },
+        { id: 'Q', colour: 'amber', anchor: { row: 4, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 2 }] },
+        { id: 'R', colour: 'cyan', anchor: { row: 5, col: 2 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }] },
+        { id: 'S', colour: 'violet', anchor: { row: 5, col: 5 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'T', colour: 'amber', anchor: { row: 5, col: 7 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'U', colour: 'amber', anchor: { row: 5, col: 9 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 0 }] },
+        { id: 'V', colour: 'mint', anchor: { row: 6, col: 0 }, shape: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 0 }] },
+        { id: 'W', colour: 'mint', anchor: { row: 6, col: 0 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'X', colour: 'mint', anchor: { row: 6, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 1 }, { row: 2, col: 2 }] },
+        { id: 'Y', colour: 'cyan', anchor: { row: 6, col: 11 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }, { row: 3, col: 0 }, { row: 4, col: 0 }] },
+        { id: 'Z', colour: 'violet', anchor: { row: 7, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
+        { id: 'a', colour: 'violet', anchor: { row: 7, col: 7 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'b', colour: 'mint', anchor: { row: 7, col: 10 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'c', colour: 'cyan', anchor: { row: 8, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
+        { id: 'd', colour: 'violet', anchor: { row: 8, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
+        { id: 'e', colour: 'amber', anchor: { row: 8, col: 9 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 0 }] },
+        { id: 'f', colour: 'cyan', anchor: { row: 9, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 'g', colour: 'violet', anchor: { row: 9, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
+        { id: 'h', colour: 'mint', anchor: { row: 9, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'i', colour: 'cyan', anchor: { row: 9, col: 6 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'j', colour: 'amber', anchor: { row: 9, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 'k', colour: 'violet', anchor: { row: 10, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
+        { id: 'l', colour: 'cyan', anchor: { row: 10, col: 4 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'm', colour: 'cyan', anchor: { row: 10, col: 9 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 1 }] },
+        { id: 'n', colour: 'violet', anchor: { row: 11, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'o', colour: 'violet', anchor: { row: 11, col: 3 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'p', colour: 'cyan', anchor: { row: 11, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'q', colour: 'amber', anchor: { row: 11, col: 11 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 'r', colour: 'mint', anchor: { row: 12, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 's', colour: 'amber', anchor: { row: 13, col: 8 }, shape: [{ row: 0, col: 0 }] },
+        { id: 't', colour: 'amber', anchor: { row: 13, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'u', colour: 'mint', anchor: { row: 13, col: 10 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'v', colour: 'mint', anchor: { row: 14, col: 8 }, shape: [{ row: 0, col: 0 }] },
       ],
     },
-    solution: ['F', 'N', 'D', 'L', 'S', 'C', 'H', 'K', 'R', 'W', 'Z', 'i', 'U', 'A', 'j', 'k', 'g', 'l', 'E', 'M', 'T', 'Y', 'b', 'm', 'd', 'f', 'P', 'J', 'B', 'G', 'I', 'O', 'Q', 'V', 'X', 'a', 'h', 'c', 'e'],
+    solution: ['n', 'v', 'E', 'D', 'o', 'k', 'r', 'I', 'g', 'Y', 'Q', 'U', 'P', 'B', 'F', 'A', 'K', 'G', 'C', 'H', 'T', 'J', 'i', 'p', 'W', 'V', 'h', 'l', 'd', 'Z', 'a', 'X', 'c', 'm', 'q', 'j', 's', 'b', 'e', 'M', 'S', 'R', 'O', 't', 'f', 'u', 'L', 'N'],
+  },
+  // Level 19 (gravity right, 12x15): 48 pieces, 157 of 180 cells.
+  // 5 free at the start; random play strands 1995 of 2000.
+  // Spread amber 0.90, cyan 0.91, violet 0.94, mint 1.07; same-colour neighbours 23% (random 24%).
+  //   + a a a a a a a a a a a a +
+  //   m . . A A B B B B B C C C c
+  //   m . . . A A D D E E F F C c
+  //   m . . . G D D H H E C C C c
+  //   m . . . G G I H J E E J K c
+  //   m . . . L M I H J J J J K c
+  //   m . . . N M I H H O K K K c
+  //   m . . . P Q Q R R O O S K c
+  //   m . . . P U T V R R O O K c
+  //   m W X X Y T T V Z Z Z O O c
+  //   m a b b c c c V d d e e f c
+  //   m a g g g h h h d i i f f c
+  //   m a j j k k h l d d i f m c
+  //   m n n j j k h l o i i m m c
+  //   m p q r k k l l l s m m s c
+  //   m t u r v v v v v s s s s c
+  //   + v v v v v v v v v v v v +
+  {
+    id: '19',
+    start: {
+      rows: 15,
+      cols: 12,
+      gravity: 'right',
+      rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
+      blocks: [
+        { id: 'A', colour: 'amber', anchor: { row: 0, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
+        { id: 'B', colour: 'mint', anchor: { row: 0, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }] },
+        { id: 'C', colour: 'cyan', anchor: { row: 0, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }] },
+        { id: 'D', colour: 'amber', anchor: { row: 1, col: 4 }, shape: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'E', colour: 'amber', anchor: { row: 1, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 1 }, { row: 2, col: 2 }] },
+        { id: 'F', colour: 'mint', anchor: { row: 1, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'G', colour: 'violet', anchor: { row: 2, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'H', colour: 'violet', anchor: { row: 2, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }, { row: 2, col: 0 }, { row: 3, col: 0 }, { row: 3, col: 1 }] },
+        { id: 'I', colour: 'violet', anchor: { row: 3, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 'J', colour: 'mint', anchor: { row: 3, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 3 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 3 }] },
+        { id: 'K', colour: 'cyan', anchor: { row: 3, col: 9 }, shape: [{ row: 0, col: 2 }, { row: 1, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 3, col: 2 }, { row: 4, col: 2 }] },
+        { id: 'L', colour: 'amber', anchor: { row: 4, col: 3 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'M', colour: 'violet', anchor: { row: 4, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'N', colour: 'cyan', anchor: { row: 5, col: 3 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'O', colour: 'amber', anchor: { row: 5, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 3, col: 2 }, { row: 3, col: 3 }] },
+        { id: 'P', colour: 'violet', anchor: { row: 6, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'Q', colour: 'mint', anchor: { row: 6, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'R', colour: 'violet', anchor: { row: 6, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
+        { id: 'S', colour: 'amber', anchor: { row: 6, col: 10 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'T', colour: 'violet', anchor: { row: 7, col: 4 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'U', colour: 'mint', anchor: { row: 7, col: 4 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'V', colour: 'mint', anchor: { row: 7, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 'W', colour: 'amber', anchor: { row: 8, col: 0 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'X', colour: 'violet', anchor: { row: 8, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'Y', colour: 'mint', anchor: { row: 8, col: 3 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'Z', colour: 'mint', anchor: { row: 8, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
+        { id: 'a', colour: 'violet', anchor: { row: 9, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }] },
+        { id: 'b', colour: 'mint', anchor: { row: 9, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'c', colour: 'mint', anchor: { row: 9, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
+        { id: 'd', colour: 'violet', anchor: { row: 9, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'e', colour: 'mint', anchor: { row: 9, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'f', colour: 'cyan', anchor: { row: 9, col: 10 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 0 }] },
+        { id: 'g', colour: 'amber', anchor: { row: 10, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
+        { id: 'h', colour: 'cyan', anchor: { row: 10, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 1 }, { row: 2, col: 1 }] },
+        { id: 'i', colour: 'cyan', anchor: { row: 10, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'j', colour: 'cyan', anchor: { row: 11, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
+        { id: 'k', colour: 'cyan', anchor: { row: 11, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'l', colour: 'violet', anchor: { row: 11, col: 5 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }] },
+        { id: 'm', colour: 'violet', anchor: { row: 11, col: 9 }, shape: [{ row: 0, col: 2 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'n', colour: 'amber', anchor: { row: 12, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'o', colour: 'violet', anchor: { row: 12, col: 7 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'p', colour: 'mint', anchor: { row: 13, col: 0 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'q', colour: 'cyan', anchor: { row: 13, col: 1 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'r', colour: 'amber', anchor: { row: 13, col: 2 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 's', colour: 'violet', anchor: { row: 13, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 3 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 3 }] },
+        { id: 't', colour: 'amber', anchor: { row: 14, col: 0 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'u', colour: 'cyan', anchor: { row: 14, col: 1 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'v', colour: 'cyan', anchor: { row: 14, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }] },
+      ],
+    },
+    solution: ['s', 'v', 'm', 'f', 'a', 'b', 'K', 'o', 'p', 'c', 'W', 'l', 'd', 'X', 'Y', 'i', 'h', 'k', 'T', 'j', 'P', 'Q', 'U', 'V', 'Z', 'R', 'e', 'M', 'I', 'G', 'C', 'A', 'D', 'B', 'E', 'F', 'H', 'L', 'J', 'S', 'O', 'N', 'g', 'n', 't', 'r', 'q', 'u'],
+  },
+  // Level 20 (gravity bottom, 12x15): 48 pieces, 158 of 180 cells.
+  // 11 free at the start; random play strands 414 of 2000.
+  // Spread amber 0.98, cyan 0.91, violet 0.92, mint 0.96; same-colour neighbours 23% (random 24%).
+  //   + a a a a a a a a a a a a +
+  //   m . . . . . . . . . . . . c
+  //   m . . . . . . . . . . A B c
+  //   m C C C D E E F G G H I J c
+  //   m K K D D L E F M M N O O c
+  //   m P K K L L Q R R R S S T c
+  //   m P P P L Q Q Q R S S U T c
+  //   m P V V W W Q Y R X Z U U c
+  //   m a V b b c c X X X Z Z U c
+  //   m V V b d c e e e X f Z g c
+  //   m h b b d c c e i f f g g c
+  //   m h h d d d j j f f k k l c
+  //   m h m m m j j n o o n k p c
+  //   m q q q m j r n n n n k p c
+  //   m q m m m s s s s t k k t c
+  //   m q q q u s v v s t t t t c
+  //   + v v v v v v v v v v v v +
+  {
+    id: '20',
+    start: {
+      rows: 15,
+      cols: 12,
+      gravity: 'bottom',
+      rails: { top: 'amber', right: 'cyan', bottom: 'violet', left: 'mint' },
+      blocks: [
+        { id: 'A', colour: 'mint', anchor: { row: 1, col: 10 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'B', colour: 'mint', anchor: { row: 1, col: 11 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'C', colour: 'amber', anchor: { row: 2, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }] },
+        { id: 'D', colour: 'mint', anchor: { row: 2, col: 2 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'E', colour: 'amber', anchor: { row: 2, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }] },
+        { id: 'F', colour: 'amber', anchor: { row: 2, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'G', colour: 'violet', anchor: { row: 2, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'H', colour: 'mint', anchor: { row: 2, col: 9 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'I', colour: 'violet', anchor: { row: 2, col: 10 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'J', colour: 'amber', anchor: { row: 2, col: 11 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'K', colour: 'cyan', anchor: { row: 3, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 1, col: 2 }] },
+        { id: 'L', colour: 'amber', anchor: { row: 3, col: 3 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 0 }] },
+        { id: 'M', colour: 'cyan', anchor: { row: 3, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'N', colour: 'violet', anchor: { row: 3, col: 9 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'O', colour: 'mint', anchor: { row: 3, col: 10 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'P', colour: 'mint', anchor: { row: 4, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 2, col: 0 }] },
+        { id: 'Q', colour: 'cyan', anchor: { row: 4, col: 4 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 2, col: 1 }] },
+        { id: 'R', colour: 'cyan', anchor: { row: 4, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 1 }, { row: 2, col: 1 }] },
+        { id: 'S', colour: 'violet', anchor: { row: 4, col: 8 }, shape: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'T', colour: 'mint', anchor: { row: 4, col: 11 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'U', colour: 'violet', anchor: { row: 5, col: 10 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 1 }] },
+        { id: 'V', colour: 'amber', anchor: { row: 6, col: 0 }, shape: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'W', colour: 'mint', anchor: { row: 6, col: 3 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'X', colour: 'cyan', anchor: { row: 6, col: 6 }, shape: [{ row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 2, col: 2 }] },
+        { id: 'Y', colour: 'violet', anchor: { row: 6, col: 6 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'Z', colour: 'violet', anchor: { row: 6, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 1 }] },
+        { id: 'a', colour: 'mint', anchor: { row: 7, col: 0 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'b', colour: 'cyan', anchor: { row: 7, col: 1 }, shape: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'c', colour: 'amber', anchor: { row: 7, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'd', colour: 'cyan', anchor: { row: 8, col: 2 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }] },
+        { id: 'e', colour: 'cyan', anchor: { row: 8, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 1 }] },
+        { id: 'f', colour: 'violet', anchor: { row: 8, col: 7 }, shape: [{ row: 0, col: 2 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 1 }] },
+        { id: 'g', colour: 'cyan', anchor: { row: 8, col: 10 }, shape: [{ row: 0, col: 1 }, { row: 1, col: 0 }, { row: 1, col: 1 }] },
+        { id: 'h', colour: 'amber', anchor: { row: 9, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 0 }] },
+        { id: 'i', colour: 'violet', anchor: { row: 9, col: 7 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'j', colour: 'mint', anchor: { row: 10, col: 4 }, shape: [{ row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 0 }] },
+        { id: 'k', colour: 'cyan', anchor: { row: 10, col: 9 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 1 }, { row: 3, col: 0 }, { row: 3, col: 1 }] },
+        { id: 'l', colour: 'cyan', anchor: { row: 10, col: 11 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'm', colour: 'amber', anchor: { row: 11, col: 1 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }] },
+        { id: 'n', colour: 'violet', anchor: { row: 11, col: 6 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 3 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 3 }] },
+        { id: 'o', colour: 'cyan', anchor: { row: 11, col: 7 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+        { id: 'p', colour: 'violet', anchor: { row: 11, col: 11 }, shape: [{ row: 0, col: 0 }, { row: 1, col: 0 }] },
+        { id: 'q', colour: 'mint', anchor: { row: 12, col: 0 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }] },
+        { id: 'r', colour: 'amber', anchor: { row: 12, col: 5 }, shape: [{ row: 0, col: 0 }] },
+        { id: 's', colour: 'cyan', anchor: { row: 13, col: 4 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 1, col: 0 }, { row: 1, col: 3 }] },
+        { id: 't', colour: 'violet', anchor: { row: 13, col: 8 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 3 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 3 }] },
+        { id: 'u', colour: 'amber', anchor: { row: 14, col: 3 }, shape: [{ row: 0, col: 0 }] },
+        { id: 'v', colour: 'violet', anchor: { row: 14, col: 5 }, shape: [{ row: 0, col: 0 }, { row: 0, col: 1 }] },
+      ],
+    },
+    solution: ['a', 'E', 'A', 'B', 'F', 'J', 'l', 'q', 't', 'p', 'k', 'g', 'v', 'P', 's', 'n', 'o', 'f', 'X', 'Z', 'i', 'M', 'C', 'D', 'L', 'U', 'S', 'R', 'Q', 'K', 'V', 'W', 'N', 'e', 'c', 'G', 'd', 'b', 'h', 'm', 'u', 'j', 'Y', 'O', 'I', 'r', 'H', 'T'],
   },
 ];
