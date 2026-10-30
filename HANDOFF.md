@@ -473,10 +473,41 @@ Jason: "Add the gravity" and "I didn't see the split pieces".
     stay as they are; gravity on more levels and the colour-mix trade are still Jason's call.
 78. The split look is a blend, not a stronger seam: a seam of any kind reads as an edge.
 
+## Job 024: three acts (2026-10-29)
+Twenty levels, three acts of five. Supersedes job 023 as sent; my "job 023" (split blend, chevrons)
+shipped as v0.0.16 before 024 arrived.
+- Act 1 (1-5), dense tap: 1 is the early 6x7 board (10 pieces, was 5); 2 the middle 10x12 board
+  (33 pieces, 68%, was 7); 3-5 new late boards at 80/85/87% with the full late treatment
+  (nests, bars, singles, threads, a closed channel, cages). 6-10 are the old 16-20, splits taken
+  out, 88-90%. Old 1-4, 6, 8-15 dropped from the list; the middle-band boards stay in candidates.
+- Act 2 (11-15), splits: 11 and 12 new (8 and 10 splits); 13-15 are the old 21-23 (12 each).
+- Act 3 (16-20), gravity: pulls down, left, up, right, down; 12x15 at 85-88%.
+- Carried-over boards checked cell by cell against the old file: identical.
+- Level 1: ten taps, two free at the start; well under a minute. Level 3: 9 of 48 free, 43 pieces
+  before the most-buried can go, a blocking chain 26 deep (the deepest of the fifteen tap levels).
+- Gravity generator rewritten (src/search/gravity.ts). The job-022 reverse build cannot place the
+  last pieces at 85-88%. Now: pack the pieces toward the pull and settle; replay forward, each turn
+  taking the highest-priority piece that can leave by the colour it wants, else any piece by any
+  open rail, and each piece takes the colour it left by. Anneal priorities and wanted colours until
+  shares, spread and neighbours are met; select across tries by strand rate. `npm run gravity`
+  takes about 95 min (40 tries a level, five at once); only about 1 try in 25 reaches the mix.
+- Strand rates, 2,000 random legal plays each: 16 bottom 90%, 17 left 66%, 18 top 46%,
+  19 right 99.8%, 20 bottom 21%. Mix on all five: spread 0.91-1.00, neighbours 22-24% against 24%.
+
+## Job 024 decisions and findings
+79. Splits stripped from 6-10 so the mechanic arrives with act 2, not as a garnish before it.
+80. Item 4: the mix holds under gravity; nothing loosened. It costs build time, not rules.
+81. Item 6: solvable by construction holds, in a new sense. The stored solution is the forward
+    replay that built the board, checked again by the tests. No forward solver is needed to ship
+    a level; one (DFS, memo on the remaining set) would only be needed for hints mid-game.
+82. Item 5: four of five strand above one in four. The cap is a todo in gravity.test.ts, not a
+    failing test, until Jason decides how to soften. Selection alone found one board in range out
+    of eight mixed ones; tuning colours toward a strand target barely moves it.
+
 ## Needs from Jason
-- Play levels 21-23 again: does a split now read as one piece?
-- Gravity beyond 24-26? It means a looser colour mix on gravity levels (decision 74).
-- Still open: more convoluted pieces than 25-35 percent (decision 66)? Levels 1-5 mixed below random?
+- Gravity levels 16-19 strand more than one random play in four. How to soften (asked, with a
+  recommendation, in the job 024 report).
+- Still open: more convoluted pieces than 25-35 percent (decision 66)?
 
 ## Next step
 - On Jason's word: next job.

@@ -17,7 +17,10 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
   | Band | Grid (wide x tall) | Pieces | Fill |
   | early | 6x7 | 6 to 10 | 35-50% |
   | middle | 10x12 | 30 to 43 | 65-80% |
-  | late | 12x15 | 44 to 52 | 85-90% | (job 019: levels 11-20, convoluted strokes, singles) |
+  | late | 12x15 | 44 to 52 | 80-90% | (job 019: convoluted strokes, singles) |
+- Job 024, three acts of five: 1-5 dense tap (6x7 50%, 10x12 68%, then 12x15 80/85/87%), 6-10
+  dense tap 88-90%, 11-15 split pieces (8-12 each), 16-20 gravity (pull turning). Level 1 is
+  the only teaching board.
 - Every colour gets 20 to 30 percent of each board's pieces.
 - Early and middle pieces are mostly 2 and 3 cells, with some 4 and 5 cell bars and L shapes.
   Singles wherever the press highlight is on and a cell is 24 px or more (rule 2, job 019); cells
@@ -25,13 +28,13 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Early boards keep 2 to 3 free pieces at the start and cluster in the middle. Middle and late
   boards have no free-at-start target (4 to 8 on middle boards is accepted, job 011); the search
   takes the board with the smallest empty patch. Do not build a stronger search for free counts.
-- Late band (job 019): levels 11 to 20 on 12x15, 48 pieces: 15-25% singles, one-cell-wide U, S,
+- Late band (job 019): levels 3 to 20 on 12x15, 48 pieces: 15-25% singles, one-cell-wide U, S,
   Z, T, plus and staircase strokes up to 7 cells, dominoes and threes; at least one piece caged
   in a U's notch that the U waits for (`cages()`); two nests of L's (7/5/3
   and 5/3, one colour each) and two long bars as landmarks, and two threaded pieces: a small piece
   whose lane is a walled one-cell channel of 4+ cells and which holds another (`threads()` in
   measures.ts); at least one channel closed at its outer end by a piece (hidden from the edge).
-- Colours are mixed on levels 6 to 20 (jobs 012, 018): colour must not follow position. Measures in
+- Colours are mixed on levels 2 to 20, gravity included (jobs 012, 018, 024): colour must not follow position. Measures in
   `src/search/measures.ts`: spread ratio per colour (own-rail distance against the board's, at
   least 0.9), same-colour neighbours (below a random deal, job 018), and dependency depth
   (pieces before the most-buried can go; at least 3 on late boards). Never loosen the mix to reach
@@ -39,11 +42,12 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Split pieces (job 021): a block's `colours` gives each cell a colour; each colour's part leaves
   by its own rail, the other part solid. A tap sends the first part that can go; the rest stays
   as an ordinary piece. Generated splits are always forced (one part in the other's lane) and
-  never locked. Levels 11-15 have 2, 16-20 have 3, 21-23 (late boards) have 12. Drawn as one
+  never locked. Only levels 11-15 have them: 8, 10, 12, 12, 12 (job 024). Drawn as one
   outline whose colour fades across the join (job 023), never with a seam line.
-- Gravity (job 022 spike, levels 24-26 only): `State.gravity` pulls toward one rail and the board
-  settles after every exit, so taps alone can strand it. Built in reverse with lifts, each step
-  checked forward (src/search/gravity.ts, `npm run gravity`); the solution is kept on the level.
+- Gravity (levels 16-20): `State.gravity` pulls toward one rail and the board settles after every
+  exit, so taps alone can strand it. Built forward (job 024, src/search/gravity.ts): pack, settle,
+  replay with annealed priorities and colours until the mix is met; the replay is the stored
+  solution. Strand rates of random play are in the generated file's comments.
   Empty cells show a faint chevron pointing the pull (job 023).
 - Deadlock: when pieces remain and none can leave, the status says "Stuck: no piece can leave" and
   the footer button offers Restart; taps there cost no strike. Exits alone can never cause it
@@ -94,7 +98,9 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Job 018: press highlight; grid 10x12 / 12x15; levels 16-20; same-colour neighbours below random.
 - Job 019: singles back (rule 2), skinny convoluted strokes, caged pieces; peel colouring.
 - Job 021: split pieces (two colours, two exits); levels 21-23.
-- Job 022 (spike): gravity, levels 24-26; verdict in HANDOFF.
+- Job 022 (spike): gravity; verdict in HANDOFF.
+- Job 023: split parts fade across the join; gravity chevrons.
+- Job 024: twenty levels in three acts; gravity at late density with the colour mix.
 - The look (M1, final): ground #060B14, faint grid behind the board; blocks are rounded shapes with
   a 1.5px lit border, translucent fill of the same colour and an outer glow; sky blue #40B4FF (`cyan` in code), amber
   #F2A93B, violet #B3A3FF, mint #4ABF6A (job 016: contrast 8.4-9.9 on the ground, apart in lightness); rails are glowing bars; every block carries its colour's
@@ -111,7 +117,7 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 ## Commands
 - `npm test` — engine typecheck guard, full typecheck, Vitest.
 - `npx tsx src/engine/demo.ts` (or `npm run demo`) — scripted solve in the terminal.
-- `npm run levels` — regenerate levels 1 to 23 from the curve in `tools/make-levels.ts`, one process per level (about 70 min).
+- `npm run levels` — regenerate levels 1 to 15 from the curve in `tools/make-levels.ts`, one process per level (about 2 h).
 - `npm run dev` — Vite dev server on the local network, fixed port 5290 (5173-5181 belong to other projects).
-- `npm run gravity` — regenerate gravity levels 24 to 26 (`tools/make-gravity.ts`, about 4 min).
+- `npm run gravity` — regenerate gravity levels 16 to 20 (`tools/make-gravity.ts`, about 95 min).
 - `npm run release` — deploy (see Deploy). `npm run check-live` — is it live?
