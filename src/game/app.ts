@@ -40,8 +40,11 @@ export interface Hud {
   /** Tap to jump to any level (for testing). */
   readonly level: HTMLSelectElement;
   readonly strikes: HTMLElement;
-  /** Under the board: "Next level" on a clear, "Restart" when stuck. */
+  /** Under the board: "Next level" on a clear, "Undo" when stuck (job 025). */
   readonly action: HTMLButtonElement;
+  /** Beside it when stuck: "Restart". */
+  readonly again: HTMLButtonElement;
+  /** Shown on gravity levels only (job 025): there an exit reshapes the board. */
   readonly undo: HTMLButtonElement;
   readonly restart: HTMLButtonElement;
 }
@@ -90,10 +93,12 @@ export function startGame(hud: Hud, world: World): void {
       'aria-label',
       solved ? 'Cleared' : stuck ? 'Stuck: no piece can leave' : `Strikes: ${attempt.strikes} of ${MAX_STRIKES}`,
     );
+    hud.undo.hidden = !state.gravity;
     hud.undo.disabled = !canUndo(attempt.history);
     hud.restart.disabled = !canUndo(attempt.history) && attempt.strikes === 0 && !stuck;
     const hasNext = solved && levelIndex < world.levels.length - 1;
-    hud.action.textContent = stuck ? 'Restart' : 'Next level';
+    hud.action.textContent = stuck ? 'Undo' : 'Next level';
+    hud.again.hidden = !stuck;
     hud.action.classList.toggle('hidden', !hasNext && !stuck);
     hud.action.disabled = !hasNext && !stuck;
   }
@@ -265,9 +270,10 @@ export function startGame(hud: Hud, world: World): void {
     hud.level.blur();
   });
   hud.action.addEventListener('click', () => {
-    if (isStuck(current(attempt.history))) resetTo(restartAttempt(attempt));
+    if (isStuck(current(attempt.history))) resetTo(undoAttempt(attempt));
     else loadLevel(levelIndex + 1);
   });
+  hud.again.addEventListener('click', () => resetTo(restartAttempt(attempt)));
   window.addEventListener('resize', relayout);
 
   updateHud();

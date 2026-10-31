@@ -54,7 +54,7 @@ html, body {
 #strikes { overflow-wrap: anywhere; }
 .actions { display: flex; gap: 8px; }
 .actions button,
-#action {
+.offers button {
   pointer-events: auto;
   touch-action: manipulation;
   min-width: 44px;
@@ -77,6 +77,8 @@ html, body {
   padding: 0 16px calc(env(safe-area-inset-bottom) + 10px);
   pointer-events: none;
 }
+.offers { display: flex; gap: 8px; }
+.actions button[hidden], .offers button[hidden] { display: none; }
 /* Hidden but still taking its space, so the board never jumps. */
 #action.hidden { visibility: hidden; }
 #build {

@@ -14,6 +14,7 @@ startGame(
     level: byId<HTMLSelectElement>('level'),
     strikes: byId('strikes'),
     action: byId<HTMLButtonElement>('action'),
+    again: byId<HTMLButtonElement>('again'),
     undo: byId<HTMLButtonElement>('undo'),
     restart: byId<HTMLButtonElement>('restart'),
   },
