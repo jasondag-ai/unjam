@@ -269,3 +269,75 @@ function plays(state: State, runs: number, rand: () => number): { strand: number
 export function strandRate(state: State, runs: number, seed: number): { stranded: number; runs: number } {
   return { stranded: Math.round(plays(state, runs, makeRandom(seed)).strand * runs), runs };
 }
+
+/**
+ * Whether a board can still be cleared, by depth-first search over taps (job 025). Under
+ * gravity a position follows from which pieces remain, so one memo serves every query on
+ * boards played from the same start.
+ */
+export function solver(): (s: State) => boolean {
+  const memo = new Map<string, boolean>();
+  const solvable = (s: State): boolean => {
+    if (isSolved(s)) return true;
+    const k = s.blocks.map((b) => `${b.id}${b.shape.length}`).sort().join(' ');
+    const known = memo.get(k);
+    if (known !== undefined) return known;
+    const ok = s.blocks.some((b) => canExit(s, b.id) && solvable(applyExit(s, b.id)!));
+    memo.set(k, ok);
+    return ok;
+  };
+  return solvable;
+}
+
+export interface SafeMoves {
+  /** Average over the states with a choice (two or more legal taps) of safe taps / legal taps. */
+  readonly average: number;
+  /** The worst such state, as safe and legal counts. */
+  readonly worst: { readonly safe: number; readonly legal: number };
+  /** States with a choice. */
+  readonly choices: number;
+}
+
+/**
+ * Job 025: walk a solution and, at each state, count the legal taps and those that leave the
+ * board solvable. A forced tap (one legal) is left out: it is no choice.
+ */
+export function safeMoves(start: State, solution: readonly string[], solvable = solver()): SafeMoves {
+  let s = start;
+  let sum = 0;
+  let choices = 0;
+  let worst = { safe: 1, legal: 1 };
+  for (const id of solution) {
+    const legal = s.blocks.filter((b) => canExit(s, b.id));
+    if (legal.length > 1) {
+      const safe = legal.filter((b) => solvable(applyExit(s, b.id)!)).length;
+      sum += safe / legal.length;
+      choices++;
+      if (safe / legal.length < worst.safe / worst.legal) worst = { safe, legal: legal.length };
+    }
+    s = applyExit(s, id)!;
+  }
+  return { average: choices ? sum / choices : 1, worst, choices };
+}
+
+/**
+ * Random play until the board clears or strands: for each strand, how many taps back the
+ * first one that lost the board was (the undos it takes to recover).
+ */
+export function undosToRecover(start: State, runs: number, seed: number, solvable = solver()): number[] {
+  const rand = makeRandom(seed);
+  const back: number[] = [];
+  for (let r = 0; r < runs; r++) {
+    let s = start;
+    let step = 0;
+    let lost = -1;
+    while (!isSolved(s) && !isStuck(s)) {
+      const free = s.blocks.filter((b) => canExit(s, b.id));
+      s = applyExit(s, free[Math.floor(rand() * free.length)]!.id)!;
+      if (lost < 0 && !solvable(s)) lost = step;
+      step++;
+    }
+    if (isStuck(s)) back.push(step - lost);
+  }
+  return back;
+}

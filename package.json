@@ -14,7 +14,8 @@
     "levels": "sh tools/make-levels.sh",
     "release": "sh tools/release.sh",
     "check-live": "sh tools/check-live.sh",
-    "gravity": "sh tools/make-gravity.sh"
+    "gravity": "sh tools/make-gravity.sh",
+    "safe": "tsx tools/safe-moves.ts"
   },
   "devDependencies": {
     "tsx": "^4.23.15",

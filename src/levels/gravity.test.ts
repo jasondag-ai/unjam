@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { applyExit, isSettled, isSolved, validateState } from '../engine';
+import { applyExit, canExit, isSettled, isSolved, isStuck, validateState } from '../engine';
 import { clumping, colourSpread } from '../search/measures';
-import { strandRate } from '../search/gravity';
+import { safeMoves, solver, strandRate } from '../search/gravity';
 import { BANDS, COLOUR_SHARE } from './bands';
 import { gravityLevels } from './gravity.generated';
 import { world1 } from './world1';
@@ -49,8 +49,20 @@ describe('gravity levels', () => {
       expect(strandRate(s, 200, 7).stranded).toBeGreaterThan(0);
     });
 
-    // Job 024 item 5: four of the five strand more than one random play in four; softening
-    // them is Jason's call (HANDOFF, Needs).
-    it.todo('strands no more than one random play in four');
+    it('job 025: the solver agrees with the stored solution and with a stranded board', () => {
+      const solvable = solver();
+      let state = s;
+      for (const id of level.solution!) {
+        expect(solvable(state)).toBe(true);
+        state = applyExit(state, id)!;
+      }
+      // First legal tap every time: play on until the board clears or strands.
+      let t = s;
+      while (!isSolved(t) && !isStuck(t)) t = applyExit(t, t.blocks.find((b) => canExit(t, b.id))!.id)!;
+      expect(solvable(t)).toBe(isSolved(t));
+      const safe = safeMoves(s, level.solution!, solvable);
+      expect(safe.choices).toBeGreaterThan(0);
+      expect(safe.worst.safe).toBeGreaterThan(0);
+    });
   });
 });
