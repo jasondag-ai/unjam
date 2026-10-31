@@ -50,8 +50,11 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
   solution. Strand rates of random play are in the generated file's comments.
   Empty cells show a faint chevron pointing the pull (job 023).
 - Deadlock: when pieces remain and none can leave, the status says "Stuck: no piece can leave" and
-  the footer button offers Restart; taps there cost no strike. Exits alone can never cause it
-  (they only empty cells); it guards for drag input.
+  the footer offers Undo, with Restart beside it (job 025); taps there cost no strike. Without
+  gravity, exits alone can never cause it (they only empty cells).
+- Undo (job 025): shown on gravity levels only; unlimited, free, never takes back a strike.
+  Gravity fairness is the safe-move share along the stored solution (`safeMoves`, `npm run safe`),
+  not random play.
 - Levels come from the board search (`src/search/`, `npm run levels`), built in reverse (rule 6).
   Grid, piece count, fill, kinds and size weights, colour share, free range, clustering and
   centre pull are its parameters. Renderer and hit testing work at any grid, scaled to fit.
@@ -101,6 +104,7 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - Job 022 (spike): gravity; verdict in HANDOFF.
 - Job 023: split parts fade across the join; gravity chevrons.
 - Job 024: twenty levels in three acts; gravity at late density with the colour mix.
+- Job 025: safe-move measure; Undo on gravity levels only; stuck screen offers Undo first.
 - The look (M1, final): ground #060B14, faint grid behind the board; blocks are rounded shapes with
   a 1.5px lit border, translucent fill of the same colour and an outer glow; sky blue #40B4FF (`cyan` in code), amber
   #F2A93B, violet #B3A3FF, mint #4ABF6A (job 016: contrast 8.4-9.9 on the ground, apart in lightness); rails are glowing bars; every block carries its colour's
@@ -120,4 +124,5 @@ Unjam is a block-escape puzzle for phones. Jason is the CEO; you are the enginee
 - `npm run levels` — regenerate levels 1 to 15 from the curve in `tools/make-levels.ts`, one process per level (about 2 h).
 - `npm run dev` — Vite dev server on the local network, fixed port 5290 (5173-5181 belong to other projects).
 - `npm run gravity` — regenerate gravity levels 16 to 20 (`tools/make-gravity.ts`, about 95 min).
+- `npm run safe` — safe-move share and undos-to-recover for the gravity levels (about 20 s).
 - `npm run release` — deploy (see Deploy). `npm run check-live` — is it live?

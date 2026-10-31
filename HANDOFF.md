@@ -504,9 +504,30 @@ shipped as v0.0.16 before 024 arrived.
     failing test, until Jason decides how to soften. Selection alone found one board in range out
     of eight mixed ones; tuning colours toward a strand target barely moves it.
 
+## Job 025: safe moves, not random play (2026-10-31)
+- No overnight cull. The one-in-four strand cap is gone from the tests (Jason: wrong measure).
+- Measure (src/search/gravity.ts, `npm run safe`): `solver()` is a depth-first search with a memo on
+  the remaining set; `safeMoves` walks the stored solution and, at each state with a choice, takes
+  safe taps / legal taps; `undosToRecover` plays randomly and, for each strand, counts taps back
+  to the first that lost the board.
+- Along the stored solution: 16 0.95 (worst 1 of 2), 17 0.97 (worst 1 of 2), 18 0.98 (worst 2 of
+  3), 19 1.00, 20 1.00. The old job-022 boards 24-26 (no longer in the game): 1.00 each.
+- On the states random players reach before losing, safe shares are 0.91-0.99, and no state has
+  1 in 4 or fewer safe. The strands come from a small risk at many choices, not one bad fork.
+- A lost board looks alive: median undos from the stuck screen back to a solvable board are
+  16: 22, 17: 2, 18: 3, 19: 27, 20: 18 (old 24-26: 9, 4, 7). One undo is enough in 10 of 661 strands.
+- Undo: on gravity levels only, unlimited, free. Stuck footer: Undo, Restart beside it. Checked in
+  the browser on 16-20: tap then Undo gives the same pixels; the stuck screen's Undo and Restart
+  work; each still clears by its stored solution.
+
+## Job 025 decisions
+83. "On gravity levels only": Undo is hidden on tap levels. There an exit only empties cells, so
+    no board is ever worse than the one before and undo recovers nothing. One line to restore.
+84. Jason named 24-26; the gravity levels are now 16-20 (job 024). Measured both.
+85. Header Undo/Restart stay; the stuck footer repeats them where the thumb is.
+
 ## Needs from Jason
-- Gravity levels 16-19 strand more than one random play in four. How to soften (asked, with a
-  recommendation, in the job 024 report).
+- A stranded player needs many undos (median 22 on 16, 27 on 19): see the job 025 report.
 - Still open: more convoluted pieces than 25-35 percent (decision 66)?
 
 ## Next step
