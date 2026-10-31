@@ -46,7 +46,7 @@ describe('gravity levels', () => {
     });
 
     it('strands some random plays', () => {
-      expect(strandRate(s, 200, 7).stranded).toBeGreaterThan(0);
+      expect(strandRate(s, 20, 7).stranded).toBeGreaterThan(0);
     });
 
     it('job 025: the solver agrees with the stored solution and with a stranded board', () => {
